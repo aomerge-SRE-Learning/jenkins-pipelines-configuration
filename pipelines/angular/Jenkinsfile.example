@@ -7,7 +7,6 @@ pipeline {
         IMAGE_NAME = 'my-angular-app'
         DOCKER_REGISTRY = 'docker.io/myuser'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        
         // Configuración de ambientes
         STAGING_PORT = '8080'
         PROD_PORT = '80'
@@ -92,7 +91,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('CD - Deploy') {
             steps {
                 script {

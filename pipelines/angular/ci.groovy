@@ -1,26 +1,12 @@
 /** Construccion de imagen docker, CI
 *
 */
-def install() {
-    echo "📦 Instalando dependencias de Node.js"
-    sh '''
-        docker run --rm \
-            -v ${WORKSPACE}:/app \
-            -w /app \
-            node:18-alpine \
-            npm ci
-    '''
-}
 
-def lint() {
-    echo "🔍 Ejecutando linter"
-    sh '''
-        docker run --rm \
-            -v ${WORKSPACE}:/app \
-            -w /app \
-            node:18-alpine \
-            npm run lint
-    '''
+
+def runDocker(){
+    echo " Ejecutando tests Docker"
+    sh '''        
+    '''   
 }
 
 def test() {

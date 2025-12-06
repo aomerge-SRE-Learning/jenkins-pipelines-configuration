@@ -1,0 +1,8 @@
+@Library('jenkins-pipelines-example') 
+
+CIPipeline(
+    serviceName: 'payments-service',
+    language: 'angular',
+    dockerRegistry: 'gcr.io/my-project',
+    dockerPush: true
+)

@@ -19,11 +19,8 @@ def call(Map config = [:]) {
             stage('Información del Sistema') {
                 steps {
                     script {
-                        echo "💻 Información del entorno:"
-                        sh 'echo "Usuario: $(whoami)"'
-                        sh 'echo "Hostname: $(hostname)"'
-                        sh 'echo "Directorio actual: $(pwd)"'
-                        sh 'echo "Build Number: ${BUILD_NUMBER}"'
+                        echo "💻 Test Docker"
+                        sh 'docker ps -la'                        
                     }
                 }
             }

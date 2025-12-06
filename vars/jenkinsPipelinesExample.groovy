@@ -19,8 +19,8 @@ def call(Map config = [:]) {
             stage('Información del Sistema') {
                 steps {
                     script {
-                        echo "💻 Test Docker"
-                        sh 'docker ps -la'                        
+                        echo "💻 Test Podman"
+                        sh 'podman ps -la'                        
                     }
                 }
             }

@@ -24,6 +24,9 @@ def call(Map config = [:]) {
                     }
                 }
             }
+            script{
+                extraStages()
+            }
         }
         
         post {

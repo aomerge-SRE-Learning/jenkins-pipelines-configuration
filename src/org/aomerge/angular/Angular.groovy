@@ -5,7 +5,5 @@ class Angular implements Serializable {
         script.echo "🔧 Ejecutando Stage Angular desde src/org/aomerge/angular/"
         script.echo "🅰️ Compilando proyecto Angular..."
         script.echo "📦 Generando build de producción..."
-    }
-
-    private static void 
+    }    
 }

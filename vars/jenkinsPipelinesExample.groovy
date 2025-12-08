@@ -26,7 +26,7 @@ def call(Map config = [:]) {
             stage('Extra') {
                 steps {
                     script {
-                        ExtraStages.runExtraSteps(this)
+                        ExtraStages.runExtraSteps(this, config.name)
                     }
                 }
             }

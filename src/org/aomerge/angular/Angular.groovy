@@ -6,4 +6,6 @@ class Angular implements Serializable {
         script.echo "🅰️ Compilando proyecto Angular..."
         script.echo "📦 Generando build de producción..."
     }
+
+    private static void 
 }

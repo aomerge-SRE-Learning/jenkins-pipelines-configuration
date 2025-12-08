@@ -1,16 +1,10 @@
-def call() {
-    stage('Stage Extra 1') {
-        steps {
-            script {
-                echo "🔧 Este es el Stage Extra 1"
-            }
-        }
-    }
-    stage('Stage Extra 2') {
-        steps {
-            script {
-                echo "🔧 Este es el Stage Extra 2"
-            }
-        }
+package org.Angular
+
+class ExtraStages implements Serializable {
+    static void runExtraSteps(script) {
+        script.echo "🔧 Ejecutando Stage Extra 1 desde src"
+        script.echo "📦 Preparando entorno desde src..."
+        script.echo "🔧 Ejecutando Stage Extra 2 desde src"
+        script.echo "✨ Finalizando tareas adicionales desde src"
     }
 }

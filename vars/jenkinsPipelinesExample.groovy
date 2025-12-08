@@ -1,6 +1,5 @@
-/**
- * Ejemplo de pipeline simple con dos stages y un Hello World
- */
+package org.Angular
+
 def call(Map config = [:]) {
     pipeline {
         agent any
@@ -27,7 +26,7 @@ def call(Map config = [:]) {
             stage('Extra') {
                 steps {
                     script {
-                        extraStages()
+                        org.Angular.ExtraStages.runExtraSteps(this)
                     }
                 }
             }

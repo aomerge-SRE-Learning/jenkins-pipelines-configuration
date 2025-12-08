@@ -1,5 +1,3 @@
-package org.Angular
-
 def call(Map config = [:]) {
     pipeline {
         agent any

@@ -1,6 +1,6 @@
 package org.aomerge
 
-import org.aomerge.Angular
+import org.aomerge.angular.Angular
 
 class ExtraStages implements Serializable {
     static void runExtraSteps(script) {

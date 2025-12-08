@@ -1,3 +1,5 @@
+import org.Angular.ExtraStages
+
 def call(Map config = [:]) {
     pipeline {
         agent any

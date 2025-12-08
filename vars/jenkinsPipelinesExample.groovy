@@ -24,8 +24,12 @@ def call(Map config = [:]) {
                     }
                 }
             }
-            script{
-                extraStages()
+            stage('Extra') {
+                steps {
+                    script {
+                        extraStages()
+                    }
+                }
             }
         }
         

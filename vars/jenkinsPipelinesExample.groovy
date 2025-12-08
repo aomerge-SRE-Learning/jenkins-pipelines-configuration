@@ -1,4 +1,4 @@
-import org.Angular.ExtraStages
+import org.aomerge.ExtraStages
 
 def call(Map config = [:]) {
     pipeline {

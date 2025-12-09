@@ -3,7 +3,7 @@ package org.aomerge
 import org.aomerge.angular.Angular
 
 class Main implements Serializable {
-    Map config
+    Map config 
 
     public Main(Map config){
         this.config = config        
@@ -14,7 +14,7 @@ class Main implements Serializable {
     }   
 
     private navLanguage(script){
-        var language = this.config.language;
+        def language = this.config.language;
 
         switch(language) {
             case "Java":

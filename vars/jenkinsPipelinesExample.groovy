@@ -1,4 +1,4 @@
-import org.aomerge.ExtraStages
+import org.aomerge.Main
 
 def call(Map config = [:]) {
     pipeline {
@@ -26,7 +26,8 @@ def call(Map config = [:]) {
             stage('Extra') {
                 steps {
                     script {
-                        ExtraStages.runExtraSteps(this, config.name)
+                        def app = new Main(config)
+                        app.run(this)
                     }
                 }
             }

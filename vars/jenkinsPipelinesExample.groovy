@@ -3,19 +3,41 @@ import org.aomerge.Main
 def call(Map config = [:]) {
     node {
         def main = new Main(config)
+        def currentStageName = ''
         
-        stage('Checkout') {
-            checkout scm
+        try {
+            currentStageName = 'Checkout'
+            stage('Checkout') {
+                checkout scm
+            }
+            
+            currentStageName = 'Init'
+            stage('Init') {
+                echo "🚀 Pipeline para: ${config.language}"
+                echo "📦 Servicio: ${config.serviceName ?: 'app'}"
+            }
+            
+            // Stages dinámicos según el lenguaje
+            main.executePipeline(this)
+            
+            echo "✅ Pipeline completado exitosamente!"
+            
+        } catch (Exception e) {
+            echo "❌ Pipeline falló en stage: ${currentStageName}"
+            echo "❌ Error: ${e.getMessage()}"
+            
+            // Notificación adicional si está configurada
+            if (config.notifyOnFailure) {
+                echo "📧 Enviando notificación de fallo..."
+                // Aquí puedes agregar notificaciones (email, slack, etc)
+            }
+            
+            // Re-lanzar el error para marcar el build como fallido
+            throw e
+            
+        } finally {
+            echo "🧹 Limpieza final del workspace..."
+            // Aquí puedes agregar lógica de limpieza si es necesario
         }
-        
-        stage('Init') {
-            echo "🚀 Pipeline para: ${config.language}"
-            echo "📦 Servicio: ${config.serviceName ?: 'app'}"
-        }
-        
-        // Stages dinámicos según el lenguaje
-        main.executePipeline(this)
-        
-        echo "✅ Pipeline completado exitosamente!"
     }
 }

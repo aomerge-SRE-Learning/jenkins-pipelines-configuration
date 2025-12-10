@@ -1,8 +1,12 @@
-@Library('jenkins-pipelines-example') 
+@Library('jenkins-pipelines-example') _
 
-CIPipeline(
-    serviceName: 'payments-service',
-    language: 'angular',
-    dockerRegistry: 'gcr.io/my-project',
-    dockerPush: true
-)
+jenkinsPipelinesExample([
+    language: 'Angular',
+    serviceName: 'my-app',
+    dockerRegistry: 'docker.io/mycompany',
+    dockerPush: true,
+    requireApproval: true,
+    approvers: 'admin',
+    deployK8s: true,
+    environment: 'production'
+])

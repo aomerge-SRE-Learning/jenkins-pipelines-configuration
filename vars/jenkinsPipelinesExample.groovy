@@ -12,9 +12,12 @@ def call(Map config = [:]) {
             }
             
             currentStageName = 'Init'
-            stage('Init') {
+            stage('Init') {                
                 echo "🚀 Pipeline para: ${config.language}"
                 echo "📦 Servicio: ${config.serviceName ?: 'app'}"
+                echo "Rama actual: ${env.BRANCH_NAME}"
+                echo "Git branch: ${env.GIT_BRANCH}"
+                
             }
             
             // Stages dinámicos según el lenguaje
@@ -26,13 +29,11 @@ def call(Map config = [:]) {
             echo "❌ Pipeline falló en stage: ${currentStageName}"
             echo "❌ Error: ${e.getMessage()}"
             
-            // Notificación adicional si está configurada
             if (config.notifyOnFailure) {
                 echo "📧 Enviando notificación de fallo..."
                 // Aquí puedes agregar notificaciones (email, slack, etc)
             }
-            
-            // Re-lanzar el error para marcar el build como fallido
+
             throw e
             
         } finally {

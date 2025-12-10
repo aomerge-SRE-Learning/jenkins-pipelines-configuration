@@ -1,45 +1,21 @@
 import org.aomerge.Main
 
 def call(Map config = [:]) {
-    pipeline {
-        agent any
+    node {
+        def main = new Main(config)
         
-        stages {
-            stage('Hello World') {
-                steps {
-                    script {
-                        echo "👋 ¡Hola Mundo desde Jenkins!"
-                        echo "🚀 Pipeline: ${config.name ?: 'jenkins-pipeline-example'}"
-                        echo "📅 Fecha: ${new Date()}"
-                    }
-                }
-            }
-            
-            stage('Información del Sistema') {
-                steps {
-                    script {
-                        echo "💻 Test Podman"
-                        sh 'podman ps -la'                        
-                    }
-                }
-            }
-            stage('Extra') {
-                steps {
-                    script {
-                        def app = new Main(config)
-                        app.run(this)
-                    }
-                }
-            }
+        stage('Checkout') {
+            checkout scm
         }
         
-        post {
-            success {
-                echo "✅ Pipeline completado exitosamente!"
-            }
-            failure {
-                echo "❌ Pipeline falló"
-            }
+        stage('Init') {
+            echo "🚀 Pipeline para: ${config.language}"
+            echo "📦 Servicio: ${config.serviceName ?: 'app'}"
         }
+        
+        // Stages dinámicos según el lenguaje
+        main.executePipeline(this)
+        
+        echo "✅ Pipeline completado exitosamente!"
     }
 }

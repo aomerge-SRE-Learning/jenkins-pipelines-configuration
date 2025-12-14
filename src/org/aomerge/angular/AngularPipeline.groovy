@@ -22,7 +22,7 @@ class AngularPipeline implements Serializable {
         
         if (config.dockerPush) {
             script.echo "🐳 Building Docker image..."            
-            withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            script.withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 sh """
                     podman login --username \$DOCKER_USER --password-stdin docker.io 
                     podman push ${config.dockerRegistry}/${config.serviceName}:${config.version}

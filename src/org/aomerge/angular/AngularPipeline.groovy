@@ -8,14 +8,14 @@ class AngularPipeline implements Serializable {
     }
     
     void test(script) {
-        def test = readFile '../../../../resources/org/aomerge/docker/angular/Dockerfile.test'
+        def test = script.readFile '../../../../resources/org/aomerge/docker/angular/Dockerfile.test'
         script.echo "🧪 Ejecutando tests de Angular..."
         script.sh 'podman build -f Dockerfile.test -t angular-test .'
         script.sh 'podman run --rm angular-test'
     }
     
     void build(script) {
-        def build = readFile '../../../../resources/org/aomerge/docker/angular/Dockerfile'
+        def build = script.readFile '../../../../resources/org/aomerge/docker/angular/Dockerfile'
         script.echo "🔨 Building Angular application..."
         script.sh "podman build -t ${config.dockerRegistry}/${config.serviceName}:${config.version} ."
         script.sh 'podman run --rm angular-build'

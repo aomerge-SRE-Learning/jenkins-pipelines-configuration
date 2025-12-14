@@ -1,0 +1,17 @@
+FROM localhost/angular:v1 AS build
+WORKDIR /test
+
+# Instalar dependencias con lockfile si existe
+COPY package*.json ./
+
+COPY public/ ./public/
+COPY src/ ./src/
+COPY angular.json ./
+COPY tsconfig.json ./
+COPY tsconfig.app.json ./
+COPY tsconfig.spec.json ./
+COPY karma.conf.js ./
+
+RUN npm install
+
+CMD ["npm", "test"]

@@ -8,19 +8,27 @@ class AngularPipeline implements Serializable {
     }
     
     void test(script) {
+        def test = readFile '../../../../resources/org/aomerge/docker/angular/Dockerfile.test'
         script.echo "🧪 Ejecutando tests de Angular..."
-        script.sh 'npm install'
-        script.sh 'npm run test'
+        script.sh 'podman build -f Dockerfile.test -t angular-test .'
+        script.sh 'podman run --rm angular-test'
     }
     
     void build(script) {
+        def build = readFile '../../../../resources/org/aomerge/docker/angular/Dockerfile'
         script.echo "🔨 Building Angular application..."
-        script.sh 'npm run build --prod'
+        script.sh "podman build -t ${config.dockerRegistry}/${config.serviceName}:${config.version} ."
+        script.sh 'podman run --rm angular-build'
         
         if (config.dockerPush) {
-            script.echo "🐳 Building Docker image..."
-            script.sh "podman build -t ${config.dockerRegistry}/${config.serviceName}:latest ."
-            script.sh "podman push ${config.dockerRegistry}/${config.serviceName}:latest"
+            script.echo "🐳 Building Docker image..."            
+            withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                sh """
+                    podman login --username \$DOCKER_USER --password-stdin docker.io 
+                    podman push ${config.dockerRegistry}/${config.serviceName}:${config.version}
+                    podman logout docker.io
+                """
+            }            
         }
     }
     

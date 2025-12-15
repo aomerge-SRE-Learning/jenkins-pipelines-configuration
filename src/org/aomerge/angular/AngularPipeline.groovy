@@ -13,11 +13,11 @@ class AngularPipeline implements Serializable {
         script.echo "🧪 Ejecutando tests de Angular..."
         script.sh "podman build -f Dockerfile.base -t base-angular-${config.serviceName} ."
         script.sh """
-            podman run --rm      
-                -v $(pwd)/src:/app/src 
-                -v $(pwd)/public:/app/public            
-                -v $(pwd)/test-results:/test/test-results                 
-                -w /app 
+            podman run --rm \\
+                -v \$(pwd)/src:/app/src \\
+                -v \$(pwd)/public:/app/public \\
+                -v \$(pwd)/test-results:/test/test-results \\
+                -w /app \\
                 base-angular-${config.serviceName} npm run test:ci
         """
     }
@@ -26,12 +26,12 @@ class AngularPipeline implements Serializable {
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile')
         script.writeFile file: 'Dockerfile', text: dockerfileContent
         script.echo "🔨 Building Angular application..."
-        script.sh"""
-            podman run --rm 
-                -v $(pwd)/src:/app/src 
-                -v $(pwd)/public:/app/public            
-                -v $(pwd)/dist:/app/dist 
-                -w /app 
+        script.sh """
+            podman run --rm \\
+                -v \$(pwd)/src:/app/src \\
+                -v \$(pwd)/public:/app/public \\
+                -v \$(pwd)/dist:/app/dist \\
+                -w /app \\
                 base-angular-${config.serviceName} npm run build --configuration=${config.environment}
         """
         script.sh "podman build -t ${config.dockerRegistry}/${config.serviceName}:${config.version} ."

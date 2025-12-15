@@ -19,7 +19,7 @@ class AngularPipeline implements Serializable {
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/test-results:/app/test-results \\
                 -w /app \\
-                base-angular-${config.serviceName} npm run test:ci && ls -l test-results/ && ls
+                base-angular-${config.serviceName} npm run test:ci && ls test-results/ && ls
         """
     }
     

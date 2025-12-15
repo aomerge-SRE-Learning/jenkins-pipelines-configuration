@@ -17,7 +17,7 @@ class AngularPipeline implements Serializable {
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
-                -v \$(pwd)/test-results:/test/test-results \\
+                -v \$(pwd)/test-results:/app/test-results \\
                 -w /app \\
                 base-angular-${config.serviceName} npm run test:ci
         """

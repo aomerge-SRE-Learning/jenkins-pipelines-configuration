@@ -1,6 +1,6 @@
-FROM angel5572/angular-chrome-test:v1 AS build
+FROM docker.io/angel5572/angular-chrome-test:v1 AS build
 WORKDIR /test
-
+    
 # Instalar dependencias con lockfile si existe
 COPY package*.json ./
 

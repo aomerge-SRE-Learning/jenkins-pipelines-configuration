@@ -14,12 +14,12 @@ class AngularPipeline implements Serializable {
         script.sh "mkdir -p test-results && chmod 777 test-results"
         script.sh "podman build -f Dockerfile.base -t base-angular-${config.serviceName} ."
         script.sh """
-            podman run \\
+            podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/test-results:/app/test-results \\
                 -w /app \\
-                base-angular-${config.serviceName} npm run test:ci
+                base-angular-${config.serviceName} npm run test:ci 
         """
     }
     

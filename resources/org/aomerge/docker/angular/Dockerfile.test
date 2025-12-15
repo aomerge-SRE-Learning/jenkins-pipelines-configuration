@@ -4,7 +4,8 @@ WORKDIR /test
 # Instalar dependencias con lockfile si existe
 COPY package*.json ./
 COPY package-lock.json ./
-RUN npm set fetch-timeout 120000 && npm set fetch-retries 10 && npm ci
+RUN npm set registry https://registry.npmmirror.com/
+RUN npm set fetch-timeout 300000 && npm set fetch-retries 10 && npm ci
 
 COPY public/ ./public/
 COPY src/ ./src/

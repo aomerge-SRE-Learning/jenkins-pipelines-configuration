@@ -9,6 +9,7 @@ def call(Map config = [:]) {
             currentStageName = 'Checkout'
             stage('Checkout') {
                 checkout scm
+                
             }
             
             currentStageName = 'Init'

@@ -1,6 +1,9 @@
 FROM docker.io/angel5572/angular-chrome-test:v2 AS build
 WORKDIR /app
 
+# Configurar variable de entorno para que Karma encuentre Chromium (ya instalado en la imagen base)
+ENV CHROME_BIN=/usr/bin/chromium-browser
+
 # Instalar dependencias con lockfile si existe
 COPY package*.json ./
 COPY package-lock.json ./

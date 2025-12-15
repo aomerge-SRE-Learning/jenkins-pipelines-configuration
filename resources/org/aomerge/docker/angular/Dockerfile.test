@@ -1,4 +1,4 @@
-FROM localhost/angular:v1 AS build
+FROM angel5572/angular-chrome-test AS build
 WORKDIR /test
 
 # Instalar dependencias con lockfile si existe

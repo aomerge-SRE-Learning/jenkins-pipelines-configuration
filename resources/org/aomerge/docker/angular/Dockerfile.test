@@ -1,8 +1,10 @@
 FROM docker.io/angel5572/angular-chrome-test:v1 AS build
 WORKDIR /test
-    
+
 # Instalar dependencias con lockfile si existe
 COPY package*.json ./
+COPY package-lock.json ./
+RUN npm set fetch-timeout 120000 && npm set fetch-retries 10 && npm ci
 
 COPY public/ ./public/
 COPY src/ ./src/
@@ -12,6 +14,4 @@ COPY tsconfig.app.json ./
 COPY tsconfig.spec.json ./
 COPY karma.conf.js ./
 
-RUN npm install
-
-CMD ["npm", "test"]
+CMD ["npm", "run", "test:ci"]

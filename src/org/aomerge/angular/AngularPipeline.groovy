@@ -1,5 +1,6 @@
 package org.aomerge.angular
 import groovy.json.JsonSlurper
+import com.cloudbees.groovy.cps.NonCPS
 
 class AngularPipeline implements Serializable {
     Map config
@@ -65,18 +66,23 @@ class AngularPipeline implements Serializable {
         }
     }
 
+    @NonCPS
+    private Map parsePackageJson(String packageJson) {
+        def pkg = new JsonSlurper().parseText(packageJson)
+        return [
+            name: pkg.name.toString(),
+            version: pkg.version.toString()
+        ]
+    }
+
     void config(script, branch){
         def packageJson = script.readFile(file: 'package.json')
-        def pkg = new JsonSlurper().parseText(packageJson)
+        def pkgInfo = parsePackageJson(packageJson)
         
-        // Convertir a String inmediatamente para evitar problemas de serialización
-        def pkgName = pkg.name.toString()
-        def pkgVersion = pkg.version.toString()
-        
-        script.echo "Nombre del servicio: ${pkgName}"
-        script.echo "Versión: ${pkgVersion}"        
-        this.serviceName = pkgName
-        this.version = pkgVersion
+        script.echo "Nombre del servicio: ${pkgInfo.name}"
+        script.echo "Versión: ${pkgInfo.version}"        
+        this.serviceName = pkgInfo.name
+        this.version = pkgInfo.version
 
         switch(branch){
             case "master":

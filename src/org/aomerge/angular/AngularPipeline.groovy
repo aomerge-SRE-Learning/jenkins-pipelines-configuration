@@ -48,7 +48,7 @@ class AngularPipeline implements Serializable {
             script.echo "🐳 Building Docker image..."            
             script.withCredentials([script.usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 script.sh """
-                    podman login --username \$DOCKER_USER --password-stdin docker.io 
+                    echo \$DOCKER_PASS | podman login --username \$DOCKER_USER --password-stdin docker.io 
                     podman push ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}
                     podman logout docker.io
                 """

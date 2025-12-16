@@ -2,26 +2,19 @@ import org.aomerge.Main
 
 def call(Map config = [:]) {
     node {
-        def main = new Main(config)
+        def main = new Main(config, env.BRANCH_NAME)
         def currentStageName = ''
         
         try {
             currentStageName = 'Checkout'
             stage('Checkout') {
                 checkout scm
-                
-            }
-            
-            currentStageName = 'Init'
-            stage('Init') {                
                 echo "🚀 Pipeline para: ${config.language}"
                 echo "📦 Servicio: ${config.serviceName ?: 'app'}"
                 echo "Rama actual: ${env.BRANCH_NAME}"
-                echo "Git branch: ${env.GIT_BRANCH}"
-                
             }
             
-            // Stages dinámicos según el lenguaje
+            currentStageName = 'config'                                
             main.executePipeline(this)
             
             echo "✅ Pipeline completado exitosamente!"

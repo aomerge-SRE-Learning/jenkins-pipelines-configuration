@@ -1,5 +1,5 @@
 # ===== Runtime con NGINX =========================================
-FROM nginx:1.27-alpine
+FROM docker.io/library/nginx:1.27-alpine
 
 # (Opcional) Limpiar conf por defecto
 RUN rm -f /etc/nginx/conf.d/default.conf

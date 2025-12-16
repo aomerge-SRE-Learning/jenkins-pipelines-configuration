@@ -1,8 +1,16 @@
 package org.aomerge.angular
+import groovy.json.JsonSlurper
 
 class AngularPipeline implements Serializable {
     Map config
     
+    String environment
+    String serviceName
+    String version
+    boolean dockerPush = true
+    boolean deployK8s = true
+    boolean requireApproval = true
+
     AngularPipeline(Map config) {
         this.config = config
     }
@@ -34,16 +42,16 @@ class AngularPipeline implements Serializable {
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/dist:/app/dist \\
                 -w /app \\
-                base-angular-${config.serviceName} npm run build --configuration=${config.environment}
+                base-angular-${this.serviceName} npm run build --configuration=${this.environment}
         """
-        script.sh "podman build -t ${config.dockerRegistry}/${config.serviceName}:${config.version} ."
+        script.sh "podman build -t ${config.dockerRegistry}/${this.serviceName}:${this.version} ."
         
-        if (config.dockerPush) {
+        if (this.dockerPush) {
             script.echo "🐳 Building Docker image..."            
             script.withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 sh """
                     podman login --username \$DOCKER_USER --password-stdin docker.io 
-                    podman push ${config.dockerRegistry}/${config.serviceName}:${config.version}
+                    podman push ${config.dockerRegistry}/${this.serviceName}:${this.version}
                     podman logout docker.io
                 """
             }            
@@ -52,6 +60,7 @@ class AngularPipeline implements Serializable {
     
     void deploy(script) {
         script.echo "🚀 Desplegando Angular a ${config.environment ?: 'production'}..."
+        script.sh "exit 1"
         if (config.deployK8s) {
             script.sh "kubectl set image deployment/${config.serviceName} app=${config.dockerRegistry}/${config.serviceName}:latest"
         } else {
@@ -59,7 +68,50 @@ class AngularPipeline implements Serializable {
         }
     }
 
+    void config(script, branch){
+        def jsonFile = new File('./package.json')
+        def pkg = new JsonSlurper().parse(jsonFile)
+        println pkg.serviceName
+        println pkg.version        
+        this.serviceName = pkg.serviceName
+        this.version = pkg.version
+
+        switch(branch){
+            case "master":
+            case "main":
+                this.environment = "production"
+                break
+            case "QA":
+                this.environment = "qa"
+                break
+            case "dev":
+                this.environment = "development"
+                break
+            default:
+                if (branch ==~ /^feature-.*$/) {
+                    this.environment = "feature"     
+                    this.requireApproval = false               
+                } else if (branch ==~ /^bugfix-.*$/) {
+                    this.environment = "bugfix"
+                    this.dockerPush = false
+                    this.deployK8s = false
+                    this.requireApproval = false
+                } else if (branch ==~ /^hotfix-.*$/) {
+                    this.environment = "hotfix"
+                } else {
+                    this.environment = branch
+                    this.dockerPush = false
+                    this.deployK8s = false
+                    this.requireApproval = false
+                }
+                break
+        }
+
+    }
+
     void trash(script){
+        script.echo "🧹 Limpiando imágenes Docker colgantes..."
+        script.sh "docker rmi \$(docker images -f "dangling=true" -q)"
 
     }
 }

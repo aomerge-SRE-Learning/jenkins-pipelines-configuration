@@ -5,9 +5,11 @@ import org.aomerge.java.JavaPipeline
 
 class Main implements Serializable {
     Map config
+    String branch
     
-    Main(Map config) {
+    Main(Map config, String branch) {
         this.config = config
+        this.branch = branch
     }
     
     void executePipeline(script) {
@@ -24,6 +26,10 @@ class Main implements Serializable {
                 script.error "❌ Lenguaje no soportado: ${config.language}"
         }
         
+        script.stage('Config') {
+            pipeline.config(script, this.branch)
+        }
+
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)

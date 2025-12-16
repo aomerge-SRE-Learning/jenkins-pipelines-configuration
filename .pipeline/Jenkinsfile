@@ -1,12 +1,7 @@
 @Library('jenkins-pipelines-example') _
 
 jenkinsPipelinesExample([
-    language: 'Angular',
-    serviceName: 'my-app',
-    dockerRegistry: 'docker.io/mycompany',
-    dockerPush: true,
-    requireApproval: true,
-    approvers: 'admin',
-    deployK8s: true,
-    environment: 'production'
+    language: 'Angular',    
+    dockerRegistry: 'docker.io/mycompany',        
+    approvers: 'admin',    
 ])

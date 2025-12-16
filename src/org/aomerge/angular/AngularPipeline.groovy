@@ -46,8 +46,8 @@ class AngularPipeline implements Serializable {
         
         if (this.dockerPush) {
             script.echo "🐳 Building Docker image..."            
-            script.withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                sh """
+            script.withCredentials([script.usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                script.sh """
                     podman login --username \$DOCKER_USER --password-stdin docker.io 
                     podman push ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}
                     podman logout docker.io
@@ -129,6 +129,5 @@ class AngularPipeline implements Serializable {
     void trash(script){
         script.echo "🧹 Limpiando imágenes Docker colgantes..."
         script.sh 'docker rmi $(docker images -f "dangling=true" -q)'
-
     }
 }

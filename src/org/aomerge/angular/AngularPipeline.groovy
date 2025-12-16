@@ -68,10 +68,15 @@ class AngularPipeline implements Serializable {
     void config(script, branch){
         def packageJson = script.readFile(file: 'package.json')
         def pkg = new JsonSlurper().parseText(packageJson)
-        script.echo "Nombre del servicio: ${pkg.name}"
-        script.echo "Versión: ${pkg.version}"        
-        this.serviceName = pkg.name
-        this.version = pkg.version
+        
+        // Convertir a String inmediatamente para evitar problemas de serialización
+        def pkgName = pkg.name.toString()
+        def pkgVersion = pkg.version.toString()
+        
+        script.echo "Nombre del servicio: ${pkgName}"
+        script.echo "Versión: ${pkgVersion}"        
+        this.serviceName = pkgName
+        this.version = pkgVersion
 
         switch(branch){
             case "master":

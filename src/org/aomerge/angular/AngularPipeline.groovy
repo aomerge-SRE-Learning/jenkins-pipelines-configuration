@@ -31,6 +31,8 @@ class AngularPipeline implements Serializable {
     void build(script) {
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile')
         script.writeFile file: 'Dockerfile', text: dockerfileContent
+        def nginxConfContent = script.libraryResource('org/aomerge/nginx/nginx.conf')
+        script.writeFile file: 'nginx.conf', text: nginxConfContent
         script.echo "🔨 Building Angular application..."        
         script.sh """
             podman run --rm \\

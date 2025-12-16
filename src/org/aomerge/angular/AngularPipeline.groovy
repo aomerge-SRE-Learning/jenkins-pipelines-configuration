@@ -18,31 +18,28 @@ class AngularPipeline implements Serializable {
     void test(script) {
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile.base')
         script.writeFile file: 'Dockerfile.base', text: dockerfileContent
-        script.echo "🧪 Ejecutando tests de Angular..."
-        script.sh "mkdir -p test-results && chmod 777 test-results"
-        script.sh "podman build -f Dockerfile.base -t base-angular-${config.serviceName} ."
+        script.echo "🧪 Ejecutando tests de Angular..."        
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/test-results:/app/test-results \\
                 -w /app \\
-                base-angular-${config.serviceName} npm run test:ci 
+                localhost/base-${config.language}-${this.serviceName} npm run test:ci 
         """
     }
     
     void build(script) {
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile')
         script.writeFile file: 'Dockerfile', text: dockerfileContent
-        script.echo "🔨 Building Angular application..."
-        script.sh "mkdir -p dist"
+        script.echo "🔨 Building Angular application..."        
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/dist:/app/dist \\
                 -w /app \\
-                base-angular-${this.serviceName} npm run build --configuration=${this.environment}
+                localhost/base-${config.language}-${this.serviceName} npm run build --configuration=${this.environment}
         """
         script.sh "podman build -t ${config.dockerRegistry}/${this.serviceName}:${this.version} ."
         
@@ -106,6 +103,10 @@ class AngularPipeline implements Serializable {
                 }
                 break
         }
+
+        script.sh "mkdir -p test-results && chmod 777 test-results"
+        script.sh "mkdir -p dist && chmod 777 dist"
+        script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language}-${this.serviceName} ."
 
     }
 

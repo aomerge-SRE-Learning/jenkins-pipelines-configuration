@@ -24,7 +24,7 @@ class AngularPipeline implements Serializable {
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/test-results:/app/test-results \\
                 -w /app \\
-                localhost/base-${config.language}-${this.serviceName} npm run test:ci 
+                localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} npm run test:ci 
         """
     }
     
@@ -38,16 +38,16 @@ class AngularPipeline implements Serializable {
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/dist:/app/dist \\
                 -w /app \\
-                localhost/base-${config.language}-${this.serviceName} npm run build --configuration=${this.environment}
+                localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} npm run build --configuration=${this.environment}
         """
-        script.sh "podman build -t ${config.dockerRegistry}/${this.serviceName}:${this.version} ."
+        script.sh "podman build -t ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version} ."
         
         if (this.dockerPush) {
             script.echo "🐳 Building Docker image..."            
             script.withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 sh """
                     podman login --username \$DOCKER_USER --password-stdin docker.io 
-                    podman push ${config.dockerRegistry}/${this.serviceName}:${this.version}
+                    podman push ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}
                     podman logout docker.io
                 """
             }            
@@ -78,12 +78,11 @@ class AngularPipeline implements Serializable {
         def pkgInfo = parsePackageJson(packageJson)
 
         def timestamp = new Date().format("yyyyMMdd")
-        script.echo "Timestamp: ${timestamp}"
-
-        script.echo "Nombre del servicio: ${pkgInfo.name}"
-        script.echo "Versión: ${pkgInfo.version}"        
+        script.echo "Timestamp: ${timestamp}"       
         this.serviceName = pkgInfo.name
         this.version = "${pkgInfo.version}-${timestamp}.${script.env.BUILD_NUMBER}"
+        script.echo "Nombre del servicio: ${pkgInfo.name}"
+        script.echo "Versión: ${pkgInfo.version}" 
 
         switch(branch){
             case "master":
@@ -121,7 +120,7 @@ class AngularPipeline implements Serializable {
 
         script.sh "mkdir -p test-results && chmod 777 test-results"
         script.sh "mkdir -p dist && chmod 777 dist"
-        script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language}-${this.serviceName} ."
+        script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} ."
 
     }
 

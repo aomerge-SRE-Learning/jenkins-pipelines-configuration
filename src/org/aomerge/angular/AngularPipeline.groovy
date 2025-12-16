@@ -16,9 +16,7 @@ class AngularPipeline implements Serializable {
         this.config = config
     }
     
-    void test(script) {
-        def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile.base')
-        script.writeFile file: 'Dockerfile.base', text: dockerfileContent
+    void test(script) {        
         script.echo "🧪 Ejecutando tests de Angular..."        
         script.sh """
             podman run --rm \\
@@ -114,7 +112,9 @@ class AngularPipeline implements Serializable {
                 }
                 break
         }
-
+        def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile.base')
+        script.writeFile file: 'Dockerfile.base', text: dockerfileContent
+        
         script.sh "mkdir -p test-results && chmod 777 test-results"
         script.sh "mkdir -p dist && chmod 777 dist"
         script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language}-${this.serviceName} ."

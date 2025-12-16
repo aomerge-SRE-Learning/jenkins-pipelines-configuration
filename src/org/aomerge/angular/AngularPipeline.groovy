@@ -111,7 +111,7 @@ class AngularPipeline implements Serializable {
 
     void trash(script){
         script.echo "🧹 Limpiando imágenes Docker colgantes..."
-        script.sh "docker rmi \$(docker images -f "dangling=true" -q)"
+        script.sh 'docker rmi $(docker images -f "dangling=true" -q)'
 
     }
 }

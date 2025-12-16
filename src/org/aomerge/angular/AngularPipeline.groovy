@@ -76,11 +76,14 @@ class AngularPipeline implements Serializable {
     void config(script, branch){
         def packageJson = script.readFile(file: 'package.json')
         def pkgInfo = parsePackageJson(packageJson)
-        
+
+        def timestamp = new Date().format("yyyyMMdd")
+        script.echo "Timestamp: ${timestamp}"
+
         script.echo "Nombre del servicio: ${pkgInfo.name}"
         script.echo "Versión: ${pkgInfo.version}"        
         this.serviceName = pkgInfo.name
-        this.version = pkgInfo.version
+        this.version = "${pkgInfo.version}-${timestamp}.${script.env.BUILD_NUMBER}"
 
         switch(branch){
             case "master":
@@ -112,9 +115,10 @@ class AngularPipeline implements Serializable {
                 }
                 break
         }
+
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile.base')
         script.writeFile file: 'Dockerfile.base', text: dockerfileContent
-        
+
         script.sh "mkdir -p test-results && chmod 777 test-results"
         script.sh "mkdir -p dist && chmod 777 dist"
         script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language}-${this.serviceName} ."

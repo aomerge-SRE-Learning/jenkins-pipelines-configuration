@@ -29,11 +29,11 @@ class ClusterPipeline implements Serializable {
                 def workDir = script.sh(script: "mktemp -d", returnStdout: true).trim()
                 this.kubeconfigPath = "${workDir}/config"
 
-                script.sh """
+                script.sh """#!/bin/bash
                     export KUBECONFIG=${this.kubeconfigPath}
-                    kubectl config set-cluster ci-cluster \
-                        --server="\$K8S_SERVER" \
-                        --certificate-authority=<(echo "\$K8S_CA_DATA" | base64 -d) \
+                    kubectl config set-cluster ci-cluster \\
+                        --server="\$K8S_SERVER" \\
+                        --certificate-authority=<(echo "\$K8S_CA_DATA" | base64 -d) \\
                         --embed-certs=true
                     kubectl config set-credentials jenkins-deployer --token="\$K8S_TOKEN"
                     kubectl config set-context ${this.contextName} --cluster=ci-cluster --user=jenkins-deployer --namespace="${this.namespace}"

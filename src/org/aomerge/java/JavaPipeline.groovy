@@ -1,6 +1,7 @@
 package org.aomerge.java
 import groovy.json.JsonSlurper
 import com.cloudbees.groovy.cps.NonCPS
+import org.aomerge.config.ClusterPipeline
 
 class JavaPipeline implements Serializable {
     Map config
@@ -42,36 +43,14 @@ class JavaPipeline implements Serializable {
     void deploy(script) {
         script.echo "🚀 Desplegando Java a ${this.environment}..."
         if (this.deployK8s) {
-            script.withCredentials([
-                script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN'),
-                script.string(credentialsId: 'k8s_server_ci', variable: 'K8S_SERVER'),
-                script.string(credentialsId: 'k8s_ca_data_ci', variable: 'K8S_CA_DATA')
-            ]) {
-                script.sh """
-                    set -euo pipefail
-
-                    WORKDIR="\$(mktemp -d)"
-                    export KUBECONFIG="\$WORKDIR/kubeconfig"
-
-                    kubectl config set-cluster ci-cluster \\
-                      --server="\$K8S_SERVER" \\
-                      --certificate-authority=<(echo "\$K8S_CA_DATA" | base64 -d) \\
-                      --embed-certs=true
-
-                    kubectl config set-credentials jenkins-deployer --token="\$K8S_TOKEN"
-                    kubectl config set-context ci-context --cluster=ci-cluster --user=jenkins-deployer --namespace="${this.environment}"
-                    kubectl config use-context ci-context
-
-                    kubectl version --client=true
-                    kubectl get ns
-                    
-                    if [ -d "k8s" ]; then
-                        kubectl apply -f k8s/
-                    else
-                        echo "⚠️ No se encontró carpeta k8s/, actualizando imagen del deployment..."
-                        kubectl set image deployment/${this.serviceName.toLowerCase()} app=${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}
-                    fi
-                """
+            def k8s = new ClusterPipeline(this.environment)
+            k8s.connect(script) {
+                if (script.fileExists('k8s/')) {
+                    k8s.sh(script, "apply -f k8s/")
+                } else {
+                    k8s.sh(script, "set image deployment/${this.serviceName.toLowerCase()} app=${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}")
+                }
+                k8s.healthcheck(script, this.serviceName.toLowerCase())
             }
         } else {
             script.echo "⚠️ Deploy no configurado (deployK8s=false)"

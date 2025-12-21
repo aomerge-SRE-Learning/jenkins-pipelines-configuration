@@ -61,7 +61,7 @@ class AngularPipeline implements Serializable {
         if (this.deployK8s) {
             def k8s = new ClusterPipeline("dev-labs")
             k8s.connect(script) {
-                k8s.sh(script, "get pods")                
+                k8s.sh(script, "upgrade --install my-app ./helm-chart", this.config.typeDeployd)            
             }
         } else {
             script.echo "⚠️ Deploy no configurado (deployK8s=false)"

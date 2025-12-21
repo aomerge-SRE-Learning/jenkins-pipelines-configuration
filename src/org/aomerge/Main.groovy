@@ -41,6 +41,9 @@ class Main implements Serializable {
             """
         }
 
+        script.stage('Scribe helm') {            
+        }
+
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)

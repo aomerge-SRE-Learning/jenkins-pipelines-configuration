@@ -68,12 +68,17 @@ class ClusterPipeline implements Serializable {
     }
 
     /**
-     * Ejecuta un comando kubectl inyectando el TOKEN directamente.
+     * Ejecuta un comando de Kubernetes (kubectl o helm).
      * El KUBECONFIG ya está en el alcance gracias al withEnv del connect.
      */
-    void sh(script, String command) {
-        script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
-            script.sh "helm ${command} --token=\$K8S_TOKEN"
+    void sh(script, String command, String tool = "kubectl") {
+        if (tool == "kubectl") {
+            script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
+                script.sh "kubectl ${command} --token=\$K8S_TOKEN"
+            }
+        } else {
+            // Helm no soporta el flag --token, usa el token del KUBECONFIG automáticamente
+            script.sh "helm ${command}"
         }
     }
 

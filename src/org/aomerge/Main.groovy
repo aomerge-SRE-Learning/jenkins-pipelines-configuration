@@ -40,11 +40,11 @@ class Main implements Serializable {
         }
         
         // Aprobación opcional
-        if (config.requireApproval) {
+        if (pipeline.requireApproval) {
             script.stage('Approval') {
                 script.timeout(time: 30, unit: 'MINUTES') {
                     script.input(
-                        message: "¿Desplegar ${config.serviceName}?",
+                        message: "¿Desplegar ${pipeline.serviceName}?",
                         submitter: config.approvers ?: 'admin',
                         ok: 'Aprobar'
                     )

@@ -4,7 +4,6 @@ import com.cloudbees.groovy.cps.NonCPS
 
 class AngularPipeline implements Serializable {
     Map config
-    
     String environment
     String serviceName
     String version
@@ -57,10 +56,12 @@ class AngularPipeline implements Serializable {
     }
     
     void deploy(script) {
-        script.echo "🚀 Desplegando Angular a ${config.environment ?: 'production'}..."
-        script.sh "exit 1"
-        if (config.deployK8s) {
-            script.sh "kubectl set image deployment/${config.serviceName} app=${config.dockerRegistry}/${config.serviceName}:latest"
+        script.echo "🚀 Desplegando Angular a ${this.environment}..."
+        if (this.deployK8s) {
+            def k8s = new ClusterPipeline("dev-labs")
+            k8s.connect(script) {
+                k8s.sh(script, "ns ")                
+            }
         } else {
             script.echo "⚠️ Deploy no configurado (deployK8s=false)"
         }
@@ -84,7 +85,7 @@ class AngularPipeline implements Serializable {
         this.serviceName = pkgInfo.name
         this.version = "${pkgInfo.version}-${timestamp}.${script.env.BUILD_NUMBER}"
         script.echo "Nombre del servicio: ${pkgInfo.name}"
-        script.echo "Versión: ${pkgInfo.version}" 
+        script.echo "Versión: ${pkgInfo.version}"         
 
         switch(branch){
             case "master":
@@ -117,6 +118,8 @@ class AngularPipeline implements Serializable {
                 break
         }
 
+        script.echo "Environment: ${this.environment}"
+
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile.base')
         script.writeFile file: 'Dockerfile.base', text: dockerfileContent
 
@@ -126,8 +129,12 @@ class AngularPipeline implements Serializable {
 
     }
 
-    void trash(script){
-        script.echo "🧹 Limpiando imágenes Docker colgantes..."
-        script.sh 'docker rmi $(docker images -f "dangling=true" -q)'
+    void trash(script, keepCount = 3){
+        script.echo "🧹 Limpiando imágenes antiguas, manteniendo las últimas ${keepCount}..."
+        script.sh """
+            podman images ${config.dockerRegistry}/${this.serviceName.toLowerCase()} --format "{{.Tag}}" | \\
+            sort -r | tail -n +\$((${keepCount} + 1)) | \\
+            xargs -r -I {} podman rmi ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:{}
+        """
     }
 }

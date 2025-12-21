@@ -16,7 +16,7 @@ class ClusterPipeline implements Serializable {
 
     /**
      * Establece la conexión y ejecuta un bloque de código (Closure).
-     * Garantiza que el archivo KUBECONFIG temporal se elimine al finalizar.
+     * Usa withEnv para que el KUBECONFIG tenga el alcance correcto en todo el bloque.
      */
     void connect(script, Closure callback) {
         script.withCredentials([
@@ -24,56 +24,53 @@ class ClusterPipeline implements Serializable {
             script.string(credentialsId: 'k8s_server_ci', variable: 'K8S_SERVER'),
             script.string(credentialsId: 'k8s_ca_data_ci', variable: 'K8S_CA_DATA')
         ]) {
-            try {
-                // Crear un directorio temporal único para el KUBECONFIG
-                def workDir = script.sh(script: "mktemp -d", returnStdout: true).trim()
-                this.kubeconfigPath = "${workDir}/config"
+            def workDir = script.sh(script: "mktemp -d", returnStdout: true).trim()
+            this.kubeconfigPath = "${workDir}/config"
 
-                script.sh """#!/bin/bash
-                    export KUBECONFIG=${this.kubeconfigPath}
-                    # Decodificar CA y configurar cluster
-                    echo "\$K8S_CA_DATA" | base64 -d > "${workDir}/ca.crt" || echo "\$K8S_CA_DATA" | base64 --decode > "${workDir}/ca.crt"
-                    
-                    kubectl config set-cluster ci-cluster \\
-                        --server="\$K8S_SERVER" \\
-                        --certificate-authority="${workDir}/ca.crt" \\
-                        --embed-certs=true
-                    
-                    # Configurar usuario (sin el token aquí para evitar problemas de masking en el archivo)
-                    kubectl config set-credentials jenkins-deployer
-                    
-                    # Configurar contexto
-                    kubectl config set-context ${this.contextName} \\
-                        --cluster=ci-cluster \\
-                        --user=jenkins-deployer \\
-                        --namespace="${this.namespace}"
-                    
-                    kubectl config use-context ${this.contextName}
-                    rm "${workDir}/ca.crt"
-                """
+            script.sh """#!/bin/bash
+                # Configuración inicial del cluster
+                kubectl config set-cluster ci-cluster --server="\$K8S_SERVER" --kubeconfig=${this.kubeconfigPath}
                 
-                script.echo "✅ Conectado al namespace: ${this.namespace}"
+                # Decodificar CA
+                echo "\$K8S_CA_DATA" | base64 -d > "${workDir}/ca.crt" || echo "\$K8S_CA_DATA" | base64 --decode > "${workDir}/ca.crt"
                 
-                // Ejecutar las acciones del usuario
-                callback.call()
+                kubectl config set-cluster ci-cluster \\
+                    --certificate-authority="${workDir}/ca.crt" \\
+                    --embed-certs=true \\
+                    --kubeconfig=${this.kubeconfigPath}
+                
+                kubectl config set-context ci-context \\
+                    --cluster=ci-cluster \\
+                    --namespace="${this.namespace}" \\
+                    --kubeconfig=${this.kubeconfigPath}
+                
+                kubectl config use-context ci-context --kubeconfig=${this.kubeconfigPath}
+                rm "${workDir}/ca.crt"
+            """
 
-            } finally {
-                disconnect(script)
+            // El secreto del alcance: withEnv inyecta la variable en todos los procesos hijos (sh)
+            script.withEnv(["KUBECONFIG=${this.kubeconfigPath}"]) {
+                try {
+                    script.echo "✅ Alcance validado: KUBECONFIG configurado en el entorno."
+                    // Validación solicitada por el usuario dentro del pipeline
+                    script.sh "kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'; echo"
+                    
+                    callback.call()
+                } finally {
+                    script.sh "rm -rf ${workDir}"
+                    this.kubeconfigPath = null
+                }
             }
         }
     }
 
     /**
-     * Ejecuta un comando kubectl inyectando el KUBECONFIG y el TOKEN directamente.
-     * Esto es más seguro y evita errores de "Unauthorized" por masking de Jenkins.
+     * Ejecuta un comando kubectl inyectando el TOKEN directamente.
+     * El KUBECONFIG ya está en el alcance gracias al withEnv del connect.
      */
     void sh(script, String command) {
-        if (!this.kubeconfigPath) script.error "❌ No hay una conexión activa al cluster."
         script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
-            script.sh """#!/bin/bash
-                export KUBECONFIG=${this.kubeconfigPath}
-                kubectl ${command} --token="\$K8S_TOKEN"
-            """
+            script.sh "kubectl ${command} --token=\$K8S_TOKEN"
         }
     }
 

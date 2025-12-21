@@ -31,13 +31,25 @@ class ClusterPipeline implements Serializable {
 
                 script.sh """#!/bin/bash
                     export KUBECONFIG=${this.kubeconfigPath}
+                    # Decodificar CA y configurar cluster
+                    echo "\$K8S_CA_DATA" | base64 -d > "${workDir}/ca.crt" || echo "\$K8S_CA_DATA" | base64 --decode > "${workDir}/ca.crt"
+                    
                     kubectl config set-cluster ci-cluster \\
                         --server="\$K8S_SERVER" \\
-                        --certificate-authority=<(echo "\$K8S_CA_DATA" | base64 -d) \\
+                        --certificate-authority="${workDir}/ca.crt" \\
                         --embed-certs=true
-                    kubectl config set-credentials jenkins-deployer --token="\$K8S_TOKEN"
-                    kubectl config set-context ${this.contextName} --cluster=ci-cluster --user=jenkins-deployer --namespace="${this.namespace}"
+                    
+                    # Configurar usuario (sin el token aquí para evitar problemas de masking en el archivo)
+                    kubectl config set-credentials jenkins-deployer
+                    
+                    # Configurar contexto
+                    kubectl config set-context ${this.contextName} \\
+                        --cluster=ci-cluster \\
+                        --user=jenkins-deployer \\
+                        --namespace="${this.namespace}"
+                    
                     kubectl config use-context ${this.contextName}
+                    rm "${workDir}/ca.crt"
                 """
                 
                 script.echo "✅ Conectado al namespace: ${this.namespace}"
@@ -52,11 +64,17 @@ class ClusterPipeline implements Serializable {
     }
 
     /**
-     * Ejecuta un comando kubectl inyectando el KUBECONFIG actual.
+     * Ejecuta un comando kubectl inyectando el KUBECONFIG y el TOKEN directamente.
+     * Esto es más seguro y evita errores de "Unauthorized" por masking de Jenkins.
      */
     void sh(script, String command) {
         if (!this.kubeconfigPath) script.error "❌ No hay una conexión activa al cluster."
-        script.sh "export KUBECONFIG=${this.kubeconfigPath} && kubectl ${command}"
+        script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
+            script.sh """#!/bin/bash
+                export KUBECONFIG=${this.kubeconfigPath}
+                kubectl ${command} --token="\$K8S_TOKEN"
+            """
+        }
     }
 
     /**

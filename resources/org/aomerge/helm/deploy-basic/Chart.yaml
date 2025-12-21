@@ -1,0 +1,4 @@
+apiVersion: v2
+name: deploy-basic
+version: 0.1.0
+description: A basic Helm chart for Angular app deployment

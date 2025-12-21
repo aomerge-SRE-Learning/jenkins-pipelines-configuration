@@ -2,6 +2,7 @@ package org.aomerge
 
 import org.aomerge.angular.AngularPipeline
 import org.aomerge.java.JavaPipeline
+import org.aomerge.config.HelmPipeline
 
 class Main implements Serializable {
     Map config
@@ -30,6 +31,16 @@ class Main implements Serializable {
             pipeline.config(script, this.branch)
         }
 
+        script.stage('Copy helm') {            
+            def helmPipeline = new HelmPipeline()
+            helmPipeline.copyHelm(script)
+            script.sh """
+                cd helm  
+                ls
+                cd ..
+            """
+        }
+
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)
@@ -42,7 +53,7 @@ class Main implements Serializable {
         // Aprobación opcional
         if (pipeline.requireApproval) {
             script.stage('Approval') {
-                script.timeout(time: 30, unit: 'MINUTES') {
+                script.timeout(time: 60, unit: 'MINUTES') {
                     script.input(
                         message: "¿Desplegar ${pipeline.serviceName}?",
                         submitter: config.approvers ?: 'admin',
@@ -61,7 +72,7 @@ class Main implements Serializable {
         }
 
         script.stage("Remove files"){
-            
+
         }
 
 

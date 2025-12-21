@@ -34,6 +34,8 @@ class ClusterPipeline implements Serializable {
                 # Decodificar CA
                 echo "\$K8S_CA_DATA" | base64 -d > "${workDir}/ca.crt" || echo "\$K8S_CA_DATA" | base64 --decode > "${workDir}/ca.crt"
                 
+                kubectl config set-credentials ci-user --token="$K8S_TOKEN" --kubeconfig=${this.kubeconfigPath}
+
                 kubectl config set-cluster ci-cluster \\
                     --certificate-authority="${workDir}/ca.crt" \\
                     --embed-certs=true \\
@@ -42,6 +44,7 @@ class ClusterPipeline implements Serializable {
                 kubectl config set-context ci-context \\
                     --cluster=ci-cluster \\
                     --namespace="${this.namespace}" \\
+                    --user=ci-user \\
                     --kubeconfig=${this.kubeconfigPath}
                 
                 kubectl config use-context ci-context --kubeconfig=${this.kubeconfigPath}
@@ -70,7 +73,7 @@ class ClusterPipeline implements Serializable {
      */
     void sh(script, String command) {
         script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
-            script.sh "kubectl ${command} --token=\$K8S_TOKEN"
+            script.sh "helm ${command} --token=\$K8S_TOKEN"
         }
     }
 

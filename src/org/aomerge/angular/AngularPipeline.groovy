@@ -1,6 +1,7 @@
 package org.aomerge.angular
 import groovy.json.JsonSlurper
 import com.cloudbees.groovy.cps.NonCPS
+import org.aomerge.config.ClusterPipeline
 
 class AngularPipeline implements Serializable {
     Map config

@@ -55,5 +55,15 @@ class Main implements Serializable {
         script.stage('Deploy') {
             pipeline.deploy(script)
         }
+
+        script.stage('healcheck'){
+
+        }
+
+        script.stage("Remove files"){
+            
+        }
+
+
     }
 }

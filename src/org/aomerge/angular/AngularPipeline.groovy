@@ -91,6 +91,7 @@ class AngularPipeline implements Serializable {
             case "master":
             case "main":
                 this.environment = "production"
+                this.dockerPush = false
                 break
             case "QA":
                 this.environment = "qa"

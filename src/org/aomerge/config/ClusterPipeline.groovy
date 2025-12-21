@@ -70,7 +70,7 @@ class ClusterPipeline implements Serializable {
      */
     void sh(script, String command) {
         script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
-            script.sh "kubectl ${command} --token=\$K8S_TOKEN"
+            script.sh "kubectl ${command}"
         }
     }
 

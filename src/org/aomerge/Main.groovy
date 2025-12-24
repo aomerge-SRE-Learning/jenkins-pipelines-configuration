@@ -31,6 +31,31 @@ class Main implements Serializable {
             pipeline.config(script, this.branch)
         }
 
+        script.stage('Copy values helm') {                    
+                if (config.configRepoUrl) {
+                    // Opción A: Clonar desde un repositorio externo
+                    script.echo "Source: External Repository ${config.configRepoUrl}"
+                    script.checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: this.branch ?: 'dev']],
+                        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'config']],
+                        userRemoteConfigs: [[
+                            url: config.configRepoUrl, 
+                            credentialsId: "aomerge"
+                        ]]
+                    ])
+                } else {
+                    // Opción B: Usar la lógica actual de la librería (libraryResource)
+                    def helmPipeline = new HelmPipeline()
+                    helmPipeline.copyHelm(script)
+                }
+                
+                script.sh """
+                    echo "📂 Contenido de la carpeta helm:"
+                    ls -R config
+                """                    
+        }
+        
         script.stage('Copy helm') {            
             def helmPipeline = new HelmPipeline()
             helmPipeline.copyHelm(script)
@@ -40,10 +65,7 @@ class Main implements Serializable {
                 cd ..
             """
         }
-
-        script.stage('Scribe helm') {            
-        }
-
+                
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)
@@ -56,7 +78,7 @@ class Main implements Serializable {
         // Aprobación opcional
         if (pipeline.requireApproval) {
             script.stage('Approval') {
-                script.timeout(time: 60, unit: 'MINUTES') {
+                script.timeout(time: 30, unit: 'DAYS') {
                     script.input(
                         message: "¿Desplegar ${pipeline.serviceName}?",
                         submitter: config.approvers ?: 'admin',

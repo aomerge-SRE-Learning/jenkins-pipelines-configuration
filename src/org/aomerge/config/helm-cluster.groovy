@@ -34,5 +34,13 @@ class HelmPipeline implements Serializable {
                 script.echo "⚠️ No se pudo cargar el recurso: ${resourcePath}. Saltando..."
             }
         }
+    }     
+
+    void copyValuesHelm(){
+        
+    }
+
+    private void filesComparer(){
+
     }
 }

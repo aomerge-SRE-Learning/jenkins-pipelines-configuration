@@ -4,5 +4,6 @@ jenkinsPipelinesExample([
     language: 'Angular',    
     dockerRegistry: 'docker.io/mycompany',        
     approvers: 'admin',    
-    typeDeployd: "helm" // helm & kubectl
+    typeDeployd: "helm", // helm & kubectl
+    configRepoUrl: "" // Repository URL
 ])

@@ -31,8 +31,12 @@ class AngularPipeline implements Serializable {
     void build(script) {
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile')
         script.writeFile file: 'Dockerfile', text: dockerfileContent
+        
         def nginxConfContent = script.libraryResource('org/aomerge/nginx/nginx.conf')
+        // Reemplazamos el placeholder dinámicamente
+        nginxConfContent = nginxConfContent.replace('{{APP_NAME}}', this.serviceName)
         script.writeFile file: 'nginx.conf', text: nginxConfContent
+        
         script.echo "🔨 Building Angular application..."        
         script.sh """
             podman run --rm \\
@@ -62,8 +66,16 @@ class AngularPipeline implements Serializable {
             def k8s = new ClusterPipeline("dev-labs")
             k8s.connect(script) {                
                 def chartPath = "./helm"
-                def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"                        
-                def helmCommand = "upgrade --install ${this.serviceName} ${chartPath} -f ${valuesPath}"
+                def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
+                def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}"
+                
+                def helmCommand = "upgrade --install ${this.serviceName} ${chartPath} " +
+                                  "-f ${valuesPath} " +
+                                  "--set container.image=${imageFull} " +
+                                  "--set app.name=${this.serviceName} " +
+                                  "--set deployment.name=${this.serviceName} " +
+                                  "--set service.name=${this.serviceName}-service " +
+                                  "--set probe.path=/${this.serviceName}/"
                 
                 // Ejecutamos
                 k8s.sh(script, helmCommand, this.config.typeDeployd)            

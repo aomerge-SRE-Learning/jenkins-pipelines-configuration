@@ -34,7 +34,7 @@ class ClusterPipeline implements Serializable {
                 # Decodificar CA
                 echo "\$K8S_CA_DATA" | base64 -d > "${workDir}/ca.crt" || echo "\$K8S_CA_DATA" | base64 --decode > "${workDir}/ca.crt"
                 
-                kubectl config set-credentials ci-user --token="$K8S_TOKEN" --kubeconfig=${this.kubeconfigPath}
+                kubectl config set-credentials ci-user --token="\$K8S_TOKEN" --kubeconfig=${this.kubeconfigPath}
 
                 kubectl config set-cluster ci-cluster \\
                     --certificate-authority="${workDir}/ca.crt" \\

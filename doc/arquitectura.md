@@ -7,6 +7,64 @@ Este proyecto implementa una **Shared Library** de Jenkins diseñada para estand
 La arquitectura se basa en el principio de **"Pipeline as Code"** y **Abstracción de Infraestructura**.
 
 ### Diagrama de Flujo Lógico
+
+```mermaid
+flowchart TD
+    Start((Inicio)) --> Init[Main.groovy: Inicialización]
+    Init --> SelectLang{¿Lenguaje?}
+    
+    SelectLang -- Angular --> AngConfig[Stage: Config]
+    SelectLang -- Java --> JavaConfig[Stage: Config]
+    
+    subgraph Angular_Pipeline [Lógica AngularPipeline.groovy]
+        AngConfig -->|Lee package.json| SetEnv[Definir Entorno & Versión]
+        SetEnv --> BuildBase[Construir Imagen Base]
+        
+        BuildBase --> HelmSetup[Stage: Copy Helm & Values]
+        HelmSetup -->|Clona/Copia| HelmReady[Helm Charts Listos]
+        
+        HelmReady --> StageTest[Stage: Test]
+        StageTest -->|npm run test:ci| UnitTests{¿Tests OK?}
+        
+        UnitTests -- No --> Fail((Fallo))
+        UnitTests -- Si --> StageBuild[Stage: Build]
+        
+        StageBuild --> GenFiles[Generar Dockerfile & nginx.conf]
+        GenFiles --> NpmBuild[npm run build]
+        NpmBuild --> DockerBuild[Podman Build Image]
+        DockerBuild --> PushCheck{¿Push Habilitado?}
+        
+        PushCheck -- Si --> DockerPush[Podman Push Registry]
+        PushCheck -- No --> ApprovalCheck
+        DockerPush --> ApprovalCheck
+        
+        ApprovalCheck{¿Requiere Aprobación?}
+        ApprovalCheck -- Si --> Input[Esperar Input Manual]
+        Input --> StageDeploy
+        ApprovalCheck -- No --> StageDeploy
+        
+        StageDeploy[Stage: Deploy]
+        StageDeploy --> K8sCheck{¿Deploy K8s?}
+        
+        K8sCheck -- Si --> HelmUpgrade[Helm Upgrade --install]
+        K8sCheck -- No --> HealthCheck
+        HelmUpgrade --> HealthCheck
+        
+        HealthCheck[Stage: Healthcheck] --> Cleanup
+    end
+
+    Cleanup[Stage: Remove Files] --> Trash[Trash.groovy: Limpieza]
+    Trash --> CleanArtifacts[cleanBuildArtifacts]
+    Trash --> CleanImages[cleanImages]
+    
+    CleanImages --> End((Fin))
+    
+    style Start fill:#f9f,stroke:#333,stroke-width:2px
+    style End fill:#f9f,stroke:#333,stroke-width:2px
+    style Angular_Pipeline fill:#e1f5fe,stroke:#01579b,stroke-width:2px,stroke-dasharray: 5 5
+    style Fail fill:#ffcdd2,stroke:#b71c1c
+```
+
 1. **Jenkinsfile (App Repo):** Invoca la librería.
 2. **Main.groovy:** Orquestador principal que detecta el tipo de proyecto.
 3. **Clases de Pipeline (AngularPipeline, JavaPipeline):** Contienen la lógica específica del lenguaje.

@@ -2,6 +2,7 @@ package org.aomerge.angular
 import groovy.json.JsonSlurper
 import com.cloudbees.groovy.cps.NonCPS
 import org.aomerge.config.ClusterPipeline
+import org.aomerge.config.Trash
 
 class AngularPipeline implements Serializable {
     Map config
@@ -85,6 +86,19 @@ class AngularPipeline implements Serializable {
         }
     }
 
+    void trash(script, int keepCount = 3) {
+        script.echo "🧹 Ejecutando limpieza de recursos..."
+        def trash = new Trash(script)
+        
+        // 1. Limpieza de artefactos de build (dist, coverage, etc)
+        trash.cleanBuildArtifacts()
+        
+        // 2. Limpieza de imágenes antiguas (Garbage Collection)
+        // Construimos el nombre de la imagen igual que en el método build()
+        def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}"
+        trash.cleanImages(imageFull, keepCount)
+    }
+
     @NonCPS
     private Map parsePackageJson(String packageJson) {
         def pkg = new JsonSlurper().parseText(packageJson)
@@ -145,14 +159,5 @@ class AngularPipeline implements Serializable {
         script.sh "mkdir -p dist && chmod 777 dist"
         script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} ."
 
-    }
-
-    void trash(script, keepCount = 3){
-        script.echo "🧹 Limpiando imágenes antiguas, manteniendo las últimas ${keepCount}..."
-        script.sh """
-            podman images ${config.dockerRegistry}/${this.serviceName.toLowerCase()} --format "{{.Tag}}" | \\
-            sort -r | tail -n +\$((${keepCount} + 1)) | \\
-            xargs -r -I {} podman rmi ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:{}
-        """
     }
 }

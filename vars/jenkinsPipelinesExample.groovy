@@ -1,4 +1,5 @@
 import org.aomerge.Main
+import org.aomerge.config.Trash
 
 def call(Map config = [:]) {
     node {
@@ -31,7 +32,17 @@ def call(Map config = [:]) {
             throw e
             
         } finally {
-            echo "🧹 Limpieza final del workspace..."
+            script.echo "🧹 Ejecutando limpieza de recursos..."
+            def keepCount = 3
+            def trash = new Trash(script)
+            
+            // 1. Limpieza de artefactos de build (dist, coverage, etc)
+            trash.cleanBuildArtifacts()
+            
+            // 2. Limpieza de imágenes antiguas (Garbage Collection)
+            // Construimos el nombre de la imagen igual que en el método build()
+            def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}"
+            trash.cleanImages(imageFull, keepCount)
             
         }
     }

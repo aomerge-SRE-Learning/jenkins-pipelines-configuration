@@ -32,7 +32,7 @@ def call(Map config = [:]) {
             
         } finally {
             echo "🧹 Limpieza final del workspace..."
-            // Aquí puedes agregar lógica de limpieza si es necesario
+            
         }
     }
 }

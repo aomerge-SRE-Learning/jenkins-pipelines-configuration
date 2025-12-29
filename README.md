@@ -36,4 +36,14 @@ Ver documentación completa en [README-LIBRARY.md](README-LIBRARY.md)
 
 ## 🎯 Lenguajes: Angular, Java, Python, Node.js
 
+## 📑 Índice de Documentación Técnica
+
+Para entender a fondo el funcionamiento de esta librería, consulta los siguientes documentos:
+
+1.  **[Arquitectura del Sistema](doc/arquitectura.md)**: Visión general, componentes y toma de decisiones técnicas.
+2.  **[Guía de Inicio Rápido (Onboarding)](doc/onboarding.md)**: Cómo integrar un nuevo proyecto en 3 pasos.
+3.  **[Modelo de Seguridad y Secretos](doc/seguridad.md)**: Gestión de credenciales y Kubeconfig efímero.
+4.  **[Estructura de Configuración Externa](doc/configuracion-externa.md)**: Guía sobre el repositorio de valores y SCM dinámico.
+5.  **[Troubleshooting y FAQ](doc/troubleshooting.md)**: Soluciones a errores comunes de infraestructura.
+
 Ver más: [README-LIBRARY.md](README-LIBRARY.md)

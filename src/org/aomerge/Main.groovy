@@ -93,11 +93,10 @@ class Main implements Serializable {
         }
 
         script.stage('healcheck'){
-
         }
 
         script.stage("Remove files"){
-
+            pipeline.trash(script)
         }
 
 

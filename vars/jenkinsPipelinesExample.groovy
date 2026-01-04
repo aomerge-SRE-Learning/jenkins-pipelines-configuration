@@ -7,7 +7,7 @@ def call(Map config = [:]) {
             githubPush()
         ])
     ])
-    
+
     node {
         def main = new Main(config, env.BRANCH_NAME)
         def currentStageName = ''
@@ -38,7 +38,7 @@ def call(Map config = [:]) {
             throw e
             
         } finally {
-            script.echo "🧹 Ejecutando limpieza de recursos..."
+            this.echo "🧹 Ejecutando limpieza de recursos..."
             def keepCount = 3
             def trash = new Trash(script)
             

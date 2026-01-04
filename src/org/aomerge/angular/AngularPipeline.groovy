@@ -55,7 +55,7 @@ class AngularPipeline implements Serializable {
                 script.sh """
                     echo \$DOCKER_PASS | podman login --username \$DOCKER_USER --password-stdin docker.io 
                     podman push ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}
-                    podman logout docker.io
+                    podman logout docker.io 2>/dev/null || true
                 """
             }            
         }

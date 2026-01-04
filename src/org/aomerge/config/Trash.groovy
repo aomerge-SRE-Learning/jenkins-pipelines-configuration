@@ -77,7 +77,9 @@ class Trash implements Serializable {
                 'coverage',
                 'Dockerfile', 
                 'Dockerfile.base',
-                'nginx.conf'
+                'nginx.conf',
+                'helm',
+                'config'
             ],
             globs: ['*.log', '*.tmp', '*.tar.gz']
         )

@@ -2,6 +2,12 @@ import org.aomerge.Main
 import org.aomerge.config.Trash
 
 def call(Map config = [:]) {
+    properties([
+        pipelineTriggers([
+            githubPush()
+        ])
+    ])
+    
     node {
         def main = new Main(config, env.BRANCH_NAME)
         def currentStageName = ''

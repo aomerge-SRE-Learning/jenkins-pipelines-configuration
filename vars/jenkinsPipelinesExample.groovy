@@ -2,10 +2,21 @@ import org.aomerge.Main
 import org.aomerge.config.Trash
 
 def call(Map config = [:]) {
+    // Sistema de triggers inteligente basado en configuración
+    def triggerConfig = config.triggers ?: [
+        type: 'polling',
+        schedule: 'H/5 * * * *',  // Cada 5 minutos por defecto
+        branches: ['main', 'develop', 'feature/*']
+    ]
+    
+    def triggers = buildTriggers(triggerConfig)
+    
     properties([
-        pipelineTriggers([
-            githubPush()
-        ])
+        pipelineTriggers(triggers),
+        buildDiscarder(logRotator(
+            numToKeepStr: '10',
+            artifactNumToKeepStr: '5'
+        ))
     ])
 
     node {
@@ -38,18 +49,65 @@ def call(Map config = [:]) {
             throw e
             
         } finally {
-            this.echo "🧹 Ejecutando limpieza de recursos..."
+            echo "🧹 Ejecutando limpieza de recursos..."
             def keepCount = 3
-            def trash = new Trash(script)
+            def trash = new Trash(this)
             
             // 1. Limpieza de artefactos de build (dist, coverage, etc)
             trash.cleanBuildArtifacts()
             
             // 2. Limpieza de imágenes antiguas (Garbage Collection)
             // Construimos el nombre de la imagen igual que en el método build()
-            def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}"
+            def imageFull = "${config.dockerRegistry}/${config.serviceName?.toLowerCase() ?: 'app'}"
             trash.cleanImages(imageFull, keepCount)
             
         }
     }
+}
+
+// Función para construir triggers basado en configuración
+def buildTriggers(Map triggerConfig) {
+    def triggers = []
+    
+    switch(triggerConfig.type) {
+        case 'polling':
+            echo "🔄 Configurando polling SCM: ${triggerConfig.schedule}"
+            triggers.add(pollSCM(triggerConfig.schedule))
+            break
+            
+        case 'webhook':
+            echo "🎯 Configurando webhook GitHub"
+            triggers.add(githubPush())
+            break
+            
+        case 'hybrid':
+            echo "🔄🎯 Configurando trigger híbrido (webhook + polling de respaldo)"
+            triggers.add(githubPush())
+            triggers.add(pollSCM(triggerConfig.backupSchedule ?: 'H/30 * * * *'))
+            break
+            
+        case 'generic':
+            echo "⚡ Configurando trigger genérico con token"
+            triggers.add(genericTrigger(
+                genericVariables: [
+                    [key: 'ref', value: '$.ref'],
+                    [key: 'repository', value: '$.repository.full_name']
+                ],
+                causeString: 'Triggered on $ref',
+                token: triggerConfig.token ?: 'default-token-123',
+                regexpFilterText: '$ref',
+                regexpFilterExpression: "refs/heads/(${triggerConfig.branches.join('|')})"
+            ))
+            break
+            
+        case 'manual':
+            echo "✋ Trigger manual - Solo se ejecuta manualmente"
+            break
+            
+        default:
+            echo "🔄 Trigger por defecto: polling cada 5 minutos"
+            triggers.add(pollSCM('H/5 * * * *'))
+    }
+    
+    return triggers
 }

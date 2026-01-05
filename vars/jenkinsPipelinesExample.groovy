@@ -12,11 +12,9 @@ def call(Map config = [:]) {
     def triggers = buildTriggers(triggerConfig)
     
     properties([
-        pipelineTriggers(triggers),
-        buildDiscarder(logRotator(
-            numToKeepStr: '10',
-            artifactNumToKeepStr: '5'
-        ))
+        pipelineTriggers([
+            githubPush()
+        ])
     ])
 
     node {

@@ -19,7 +19,14 @@ def call(Map config = [:]) {
                 checkout scm
                 echo "🚀 Pipeline para: ${config.language}"
                 echo "📦 Servicio: ${config.serviceName ?: 'app'}"
-                echo "Rama actual: ${env.BRANCH_NAME}"
+                echo "🌿 Rama actual: ${env.BRANCH_NAME}"
+                
+                // Información adicional para PRs
+                if (env.CHANGE_ID) {
+                    echo "🔀 Pull Request #${env.CHANGE_ID}"
+                    echo "📌 Rama origen: ${env.CHANGE_BRANCH}"
+                    echo "🎯 Rama destino: ${env.CHANGE_TARGET}"
+                }
             }
             
             currentStageName = 'config'                                

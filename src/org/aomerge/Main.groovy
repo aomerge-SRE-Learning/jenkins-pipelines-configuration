@@ -7,10 +7,13 @@ import org.aomerge.config.HelmPipeline
 class Main implements Serializable {
     Map config
     String branch
+    def env  // Objeto env completo de Jenkins
     
-    Main(Map config, String branch) {
+    Main(Map config, def env) {
         this.config = config
-        this.branch = branch
+        this.env = env
+        // Determinar la rama real: Si es PR, usar CHANGE_TARGET, sino usar BRANCH_NAME
+        this.branch = env.CHANGE_TARGET ?: env.BRANCH_NAME
     }
     
     void executePipeline(script) {

@@ -26,6 +26,12 @@ class Main implements Serializable {
             default:
                 script.error "❌ Lenguaje no soportado: ${config.language}"
         }
+
+        script.stage('Info') {
+            script.echo "Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"
+            script.echo "Rama fuente del PR (CHANGE_BRANCH): ${env.CHANGE_BRANCH}"
+            script.echo "Rama destino del PR (CHANGE_TARGET): ${env.CHANGE_TARGET}"
+        }
         
         script.stage('Config') {
             pipeline.config(script, this.branch)

@@ -1,15 +1,7 @@
 import org.aomerge.Main
 import org.aomerge.config.Trash
 
-def call(Map config = [:]) {
-    // Sistema de triggers inteligente basado en configuración
-    def triggerConfig = config.triggers ?: [
-        type: 'polling',
-        schedule: 'H/5 * * * *',  // Cada 5 minutos por defecto
-        branches: ['main', 'develop', 'feature/*']
-    ]
-    
-    def triggers = buildTriggers(triggerConfig)
+def call(Map config = [:]) {    
     
     properties([
         pipelineTriggers([

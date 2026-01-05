@@ -10,7 +10,7 @@ def call(Map config = [:]) {
     ])
 
     node {
-        def main = new Main(config, env.BRANCH_NAME)
+        def main = new Main(config, env)
         def currentStageName = ''
         
         try {

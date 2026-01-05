@@ -57,6 +57,7 @@ def call(Map config = [:]) {
 
 // Función para construir triggers basado en configuración
 def buildTriggers(Map triggerConfig) {
+
     def triggers = []
     
     switch(triggerConfig.type) {

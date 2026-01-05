@@ -76,8 +76,15 @@ class JavaPipeline implements Serializable {
         
         script.echo "Nombre del servicio: ${this.serviceName}"
         script.echo "Versión: ${this.version}"
+        script.echo "Branch original: ${branch}"
 
         switch(branch){
+            case { it ==~ /^PR-\d+$/ } :
+                def target = script.env.CHANGE_TARGET
+                script.echo "PR detectado (${branch}). Rama destino real: ${target}"
+                branch = target ?: branch
+                // volver a evaluar con la rama real
+                return config(script, branch)
             case "master":
             case "main":
                 this.environment = "production"
@@ -100,5 +107,6 @@ class JavaPipeline implements Serializable {
                 }
                 break
         }
-    }
+    }    
+
 }

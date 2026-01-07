@@ -28,6 +28,16 @@ class Main implements Serializable {
                 script.error "❌ Lenguaje no soportado: ${config.language}"
         }
     }
+        private def switchLenguage(lenguage){
+            switch(lenguage?.toLowerCase()) {
+                case 'angular':
+                    return new AngularPipeline(config)
+                case 'java':
+                    return new JavaPipeline(config)
+                default:
+                    throw new RuntimeException("❌ Lenguaje no soportado: ${config.language}")
+            }
+        }
 
     private void switchCICD(branchName, pipeline){
         if (branchName?.toLowerCase()?.startsWith('pr')) {
@@ -110,7 +120,7 @@ class Main implements Serializable {
     }
 
     void executePipeline(script) {
-        def pipeline = this.switchLenguage(pipeline, config.language)
+        def pipeline = this.switchLenguage(config.language)
 
         script.stage('Info') {
             script.echo "Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"
@@ -119,7 +129,9 @@ class Main implements Serializable {
         }
         
         script.stage('Config') {
-            pipeline.config(script, this.branch)
+                if (pipeline.metaClass.respondsTo(pipeline, 'config')) {
+                    pipeline.config(script, this.branch)
+                }
         }        
 
         this.switchCICD(env.BRANCH_NAME, pipeline)                                

@@ -16,10 +16,8 @@ class Main implements Serializable {
         this.branch = env.CHANGE_TARGET ?: env.BRANCH_NAME
     }
     
-    void executePipeline(script) {
-        def pipeline
-        
-        switch(config.language?.toLowerCase()) {
+    private void switchLenguage(pipeline, lenguage){
+        switch(lenguage?.toLowerCase()) {
             case 'angular':
                 pipeline = new AngularPipeline(config)
                 break
@@ -29,17 +27,17 @@ class Main implements Serializable {
             default:
                 script.error "❌ Lenguaje no soportado: ${config.language}"
         }
+    }
 
-        script.stage('Info') {
-            script.echo "Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"
-            script.echo "Rama fuente del PR (CHANGE_BRANCH): ${env.CHANGE_BRANCH}"
-            script.echo "Rama destino del PR (CHANGE_TARGET): ${env.CHANGE_TARGET}"
-        }
-        
-        script.stage('Config') {
-            pipeline.config(script, this.branch)
-        }
+    private void switchCICD(branchName, pipeline){
+        if (branchName?.toLowerCase()?.startsWith('pr')) {
+            this.CIPipeline(pipeline)
+        } else if (branchName) {
+            
+        }        
+    }
 
+    private void CIPipeline(pipeline){
         script.stage('Copy values helm') {                    
                 if (config.configRepoUrl) {
                     // Opción A: Clonar desde un repositorio externo
@@ -74,7 +72,7 @@ class Main implements Serializable {
                 cd ..
             """
         }
-                
+        
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)
@@ -83,8 +81,9 @@ class Main implements Serializable {
         script.stage('Build') {
             pipeline.build(script)
         }
-        
-        // Aprobación opcional
+    }
+
+    private void CDPipeline(pipeline){
         if (pipeline.requireApproval) {
             script.stage('Approval') {
                 script.timeout(time: 30, unit: 'DAYS') {
@@ -96,7 +95,7 @@ class Main implements Serializable {
                 }
             }
         }
-        
+
         script.stage('Deploy') {
             pipeline.deploy(script)
         }
@@ -108,6 +107,24 @@ class Main implements Serializable {
             pipeline.trash(script)
         }
 
-
     }
+
+    void executePipeline(script) {
+        def pipeline        
+
+        this.switchLenguage(pipeline, config.language)
+
+        script.stage('Info') {
+            script.echo "Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"
+            script.echo "Rama fuente del PR (CHANGE_BRANCH): ${env.CHANGE_BRANCH}"
+            script.echo "Rama destino del PR (CHANGE_TARGET): ${env.CHANGE_TARGET}"
+        }
+        
+        script.stage('Config') {
+            pipeline.config(script, this.branch)
+        }        
+
+        this.switchCICD(env.BRANCH_NAME, pipeline)                                
+
+    }    
 }

@@ -33,8 +33,8 @@ class Main implements Serializable {
         if (branchName?.toLowerCase()?.startsWith('pr')) {
             this.CIPipeline(pipeline)
         } else if (branchName) {
-            
-        }        
+            this.CDPipeline(pipeline)            
+        }
     }
 
     private void CIPipeline(pipeline){
@@ -72,7 +72,7 @@ class Main implements Serializable {
                 cd ..
             """
         }
-        
+
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)
@@ -110,9 +110,7 @@ class Main implements Serializable {
     }
 
     void executePipeline(script) {
-        def pipeline        
-
-        this.switchLenguage(pipeline, config.language)
+        def pipeline = this.switchLenguage(pipeline, config.language)
 
         script.stage('Info') {
             script.echo "Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"

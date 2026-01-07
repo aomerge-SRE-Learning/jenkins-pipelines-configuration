@@ -8,6 +8,7 @@ class Main implements Serializable {
     Map config
     String branch
     def env  // Objeto env completo de Jenkins
+    def script  // Objeto script de Jenkins
     
     Main(Map config, def env) {
         this.config = config
@@ -16,19 +17,7 @@ class Main implements Serializable {
         this.branch = env.CHANGE_TARGET ?: env.BRANCH_NAME
     }
     
-    private void switchLenguage(pipeline, lenguage){
-        switch(lenguage?.toLowerCase()) {
-            case 'angular':
-                pipeline = new AngularPipeline(config)
-                break
-            case 'java':
-                pipeline = new JavaPipeline(config)
-                break
-            default:
-                script.error "❌ Lenguaje no soportado: ${config.language}"
-        }
-    }
-        private def switchLenguage(lenguage){
+    private def switchLenguage(lenguage){
             switch(lenguage?.toLowerCase()) {
                 case 'angular':
                     return new AngularPipeline(config)
@@ -39,15 +28,15 @@ class Main implements Serializable {
             }
         }
 
-    private void switchCICD(branchName, pipeline){
+    private void switchCICD(branchName, pipeline, script){
         if (branchName?.toLowerCase()?.startsWith('pr')) {
-            this.CIPipeline(pipeline)
+            this.CIPipeline(pipeline, script)
         } else if (branchName) {
-            this.CDPipeline(pipeline)            
+            this.CDPipeline(pipeline, script)            
         }
     }
 
-    private void CIPipeline(pipeline){
+    private void CIPipeline(pipeline, script){
         script.stage('Copy values helm') {                    
                 if (config.configRepoUrl) {
                     // Opción A: Clonar desde un repositorio externo
@@ -93,7 +82,7 @@ class Main implements Serializable {
         }
     }
 
-    private void CDPipeline(pipeline){
+    private void CDPipeline(pipeline, script){
         if (pipeline.requireApproval) {
             script.stage('Approval') {
                 script.timeout(time: 30, unit: 'DAYS') {
@@ -120,6 +109,7 @@ class Main implements Serializable {
     }
 
     void executePipeline(script) {
+        this.script = script  // Guardamos script como atributo de la clase
         def pipeline = this.switchLenguage(config.language)
 
         script.stage('Info') {
@@ -134,7 +124,7 @@ class Main implements Serializable {
                 }
         }        
 
-        this.switchCICD(env.BRANCH_NAME, pipeline)                                
+        this.switchCICD(env.BRANCH_NAME, pipeline, script)                                
 
     }    
 }

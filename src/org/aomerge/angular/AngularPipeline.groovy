@@ -80,10 +80,20 @@ class AngularPipeline implements Serializable {
             k8s.connect(script) {                
                 def chartPath = "./helm"
                 def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
+                def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
                 def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}"
                 
+                if (!fileExists(valuesPath) && !fileExists(ingressValuesPath)) {
+                    script.error("❌ No se encontraron los archivos de configuración: '${valuesPath}' y '${ingressValuesPath}'. No se puede continuar con el despliegue.")
+                } else if (!fileExists(valuesPath)) {
+                    script.error("❌ No se encontró el archivo de configuración de valores: '${valuesPath}'. No se puede continuar con el despliegue.")
+                } else if (!fileExists(ingressValuesPath)) {
+                    script.error("❌ No se encontró el archivo de configuración de ingress: '${ingressValuesPath}'. No se puede continuar con el despliegue.")
+                }
+
                 def helmCommand = "upgrade --install ${this.serviceName} ${chartPath} " +
                                   "-f ${valuesPath} " +
+                                  "-f ${ingressValuesPath} " +
                                   "--set container.image=${imageFull} " +
                                   "--set app.name=${this.serviceName} " +
                                   "--set deployment.name=${this.serviceName} " +

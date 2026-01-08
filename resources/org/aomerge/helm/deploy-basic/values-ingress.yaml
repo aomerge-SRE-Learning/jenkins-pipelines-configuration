@@ -1,0 +1,46 @@
+# Configuración específica del Ingress
+app:
+  name: test-pod  # Debe coincidir con values-service.yaml
+
+ingress:
+  enabled: true
+  hosts:
+    - host: mi-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: test-pod-service  # Debe coincidir con el service.name
+            port: 80
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
+          service:
+            name: test-pod-service
+            port: 80
+        - path: /admin(/|$)(.*)
+          pathType: ImplementationSpecific
+          service:
+            name: test-pod-service
+            port: 80
+    - host: api.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: test-pod-service
+            port: 80
+  
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+  
+  ingressClassName: nginx
+  
+  tls:
+    enabled: false
+    hosts: []
+    # - secretName: mi-app-tls
+    #   hostnames:
+    #     - mi-app.local
+    #     - api.local

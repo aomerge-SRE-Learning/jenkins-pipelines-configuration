@@ -1,0 +1,77 @@
+@Library('jenkins-pipelines-configuration') _
+
+// Configuración del pipeline con control de ramas y webhooks mejorado
+jenkinsPipelinesExample([
+    // Configuración básica
+    language: 'angular',
+    serviceName: 'my-angular-app',
+    dockerRegistry: 'docker.io/myregistry',
+    
+    // Control de triggers y validaciones
+    enableWebhook: true,  // Habilitar webhook (true por defecto)
+    skipInvalidBranches: true,  // Saltar ramas no válidas (true por defecto)
+    
+    // Ramas válidas para ejecución automática
+    validBranches: ['main', 'master', 'dev', 'develop', 'qa'],
+    
+    // Configuración de notificaciones
+    notifyOnFailure: true,
+    
+    // Configuración de aprobaciones (opcional, se configura por rama automáticamente)
+    approvers: 'admin,devops-team',
+    
+    // Repositorio de configuración externa (opcional)
+    configRepoUrl: 'https://github.com/myorg/k8s-config.git',
+    
+    // Tipo de despliegue
+    typeDeployd: 'k8s'
+])
+
+/*
+CONFIGURACIÓN AUTOMÁTICA POR RAMA:
+
+🌟 MAIN/MASTER:
+   - Environment: production
+   - Docker Push: ✅ SI
+   - Deploy K8s: ✅ SI  
+   - Require Approval: ✅ SI
+   
+🧪 QA:
+   - Environment: qa
+   - Docker Push: ✅ SI
+   - Deploy K8s: ✅ SI
+   - Require Approval: ❌ NO
+   
+🔧 DEV/DEVELOP:
+   - Environment: development
+   - Docker Push: ❌ NO (solo local)
+   - Deploy K8s: ✅ SI
+   - Require Approval: ❌ NO
+   
+🌿 FEATURE-*:
+   - Environment: feature
+   - Docker Push: ❌ NO
+   - Deploy K8s: ❌ NO (solo CI)
+   - Require Approval: ❌ NO
+   
+🐛 BUGFIX-*:
+   - Environment: bugfix
+   - Docker Push: ❌ NO
+   - Deploy K8s: ❌ NO (solo CI)
+   - Require Approval: ❌ NO
+   
+🔥 HOTFIX-*:
+   - Environment: hotfix
+   - Docker Push: ✅ SI
+   - Deploy K8s: ✅ SI
+   - Require Approval: ✅ SI
+   
+🔀 PR-*:
+   - Environment: pr
+   - Docker Push: ❌ NO
+   - Deploy K8s: ❌ NO (solo CI)
+   - Require Approval: ❌ NO
+
+❌ OTRAS RAMAS:
+   - Se marcan como no válidas y el pipeline se cancela automáticamente
+*/

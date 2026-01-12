@@ -1,7 +1,7 @@
 package org.aomerge
 
-import org.aomerge.angular.AngularPipeline
-import org.aomerge.java.JavaPipeline
+import org.aomerge.lenguage.AngularPipeline
+import org.aomerge.lenguage.JavaPipeline
 import org.aomerge.config.HelmPipeline
 
 class Main implements Serializable {
@@ -26,7 +26,7 @@ class Main implements Serializable {
                 default:
                     throw new RuntimeException("❌ Lenguaje no soportado: ${config.language}")
             }
-        }
+    }
 
     private void switchCICD(branchName, pipeline, script){
         if (branchName?.toLowerCase()?.startsWith('pr')) {
@@ -37,6 +37,7 @@ class Main implements Serializable {
     }
 
     private void CIPipeline(pipeline, script){
+
         script.stage('Copy values helm') {                    
                 if (config.configRepoUrl) {
                     // Opción A: Clonar desde un repositorio externo
@@ -113,15 +114,23 @@ class Main implements Serializable {
         def pipeline = this.switchLenguage(config.language)
 
         script.stage('Info') {
-            script.echo "Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"
-            script.echo "Rama fuente del PR (CHANGE_BRANCH): ${env.CHANGE_BRANCH}"
-            script.echo "Rama destino del PR (CHANGE_TARGET): ${env.CHANGE_TARGET}"
+            script.echo "🌿 Rama actual (BRANCH_NAME): ${env.BRANCH_NAME}"
+            script.echo "🔀 Rama fuente del PR (CHANGE_BRANCH): ${env.CHANGE_BRANCH}"
+            script.echo "🎯 Rama destino del PR (CHANGE_TARGET): ${env.CHANGE_TARGET}"
+            script.echo "🔧 Rama procesada: ${this.branch}"
         }
         
         script.stage('Config') {
-                if (pipeline.metaClass.respondsTo(pipeline, 'config')) {
-                    pipeline.config(script, this.branch)
+            if (pipeline.metaClass.respondsTo(pipeline, 'config')) {
+                pipeline.config(script, this.branch)
+                
+                // Verificar si el pipeline debe continuar después de la configuración
+                if (pipeline.metaClass.respondsTo(pipeline, 'isValidExecution') && 
+                    !pipeline.isValidExecution()) {
+                    script.echo "🛑 Pipeline detenido - Configuración de rama no válida"
+                    return  // Salir del pipeline sin ejecutar más stages
                 }
+            }
         }        
 
         this.switchCICD(env.BRANCH_NAME, pipeline, script)                                

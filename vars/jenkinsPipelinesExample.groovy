@@ -3,10 +3,14 @@ import org.aomerge.config.Trash
 
 def call(Map config = [:]) {    
     
+    // Configurar triggers con validación mejorada
+    def triggers = []
+    if (config.enableWebhook != false) {  // Por defecto habilitado
+        triggers.add(githubPush())
+    }
+    
     properties([
-        pipelineTriggers([
-            githubPush()
-        ])
+        pipelineTriggers(triggers)
     ])
 
     node {
@@ -26,6 +30,23 @@ def call(Map config = [:]) {
                     echo "🔀 Pull Request #${env.CHANGE_ID}"
                     echo "📌 Rama origen: ${env.CHANGE_BRANCH}"
                     echo "🎯 Rama destino: ${env.CHANGE_TARGET}"
+                }
+                
+                // Validación temprana para evitar ejecuciones innecesarias
+                def targetBranch = env.CHANGE_TARGET ?: env.BRANCH_NAME
+                echo "🎯 Rama objetivo determinada: ${targetBranch}"
+                
+                // Lista de ramas válidas (configurable)
+                def validBranches = config.validBranches ?: ['main', 'master', 'dev', 'develop', 'qa']
+                def isFeatureBranch = targetBranch?.toLowerCase() ==~ /^(feature|bugfix|hotfix)-.*$/
+                
+                if (!validBranches.contains(targetBranch?.toLowerCase()) && !isFeatureBranch) {
+                    echo "⚠️ Rama '${targetBranch}' no está en la lista de ramas válidas: ${validBranches}"
+                    if (config.skipInvalidBranches != false) {  // Por defecto skip
+                        currentBuild.result = 'NOT_BUILT'
+                        echo "🛑 Pipeline cancelado para rama no válida"
+                        return
+                    }
                 }
             }
             

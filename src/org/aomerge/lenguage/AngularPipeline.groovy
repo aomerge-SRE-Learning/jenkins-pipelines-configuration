@@ -3,6 +3,7 @@ import groovy.json.JsonSlurper
 import com.cloudbees.groovy.cps.NonCPS
 import org.aomerge.config.ClusterPipeline
 import org.aomerge.config.Trash
+import org.aomerge.config.BranchConfig
 
 class AngularPipeline implements Serializable {
     Map config
@@ -12,6 +13,7 @@ class AngularPipeline implements Serializable {
     boolean dockerPush = true
     boolean deployK8s = true
     boolean requireApproval = true
+    BranchConfig branchConfig  // Nueva propiedad para manejar configuración por rama
 
     AngularPipeline(Map config) {
         this.config = config
@@ -75,6 +77,7 @@ class AngularPipeline implements Serializable {
     
     void deploy(script) {
         script.echo "🚀 Desplegando Angular a ${this.environment}..."
+
         if (this.deployK8s) {
             def k8s = new ClusterPipeline("dev-labs")
             k8s.connect(script) {                
@@ -131,6 +134,16 @@ class AngularPipeline implements Serializable {
     }
 
     void config(script, branch){
+        // Inicializar configuración de rama
+        this.branchConfig = new BranchConfig(branch)
+        
+        // Validar si debe ejecutarse (solución al problema del webhook)
+        if (!this.branchConfig.shouldExecute(script, branch)) {
+            script.currentBuild.result = 'NOT_BUILT'
+            script.echo "🚫 Pipeline cancelado - Rama '${branch}' no válida o duplicada"
+            return
+        }
+        
         def packageJson = script.readFile(file: 'package.json')
         def pkgInfo = parsePackageJson(packageJson)
 
@@ -138,41 +151,20 @@ class AngularPipeline implements Serializable {
         script.echo "Timestamp: ${timestamp}"       
         this.serviceName = pkgInfo.name
         this.version = "${pkgInfo.version}-${timestamp}.${script.env.BUILD_NUMBER}"
-        script.echo "Nombre del servicio: ${pkgInfo.name}"
-        script.echo "Versión: ${pkgInfo.version}"         
-
-        switch(branch){
-            case "master":
-            case "main":
-                this.environment = "production"                
-                break
-            case "QA":
-                this.environment = "qa"
-                break
-            case "dev":
-                this.environment = "development"
-                break
-            default:
-                if (branch ==~ /^feature-.*$/) {
-                    this.environment = "feature"     
-                    this.requireApproval = false               
-                } else if (branch ==~ /^bugfix-.*$/) {
-                    this.environment = "bugfix"
-                    this.dockerPush = false
-                    this.deployK8s = false
-                    this.requireApproval = false
-                } else if (branch ==~ /^hotfix-.*$/) {
-                    this.environment = "hotfix"
-                } else {
-                    this.environment = branch
-                    this.dockerPush = false
-                    this.deployK8s = false
-                    this.requireApproval = false
-                }
-                break
-        }
-
-        script.echo "Environment: ${this.environment}"
+        
+        // Configurar propiedades según la rama usando BranchConfig
+        this.environment = this.branchConfig.getEnvironment()
+        this.dockerPush = this.branchConfig.getDockerPush()
+        this.deployK8s = this.branchConfig.getDeployK8s()
+        this.requireApproval = this.branchConfig.getRequireApproval()
+        
+        script.echo "📦 Nombre del servicio: ${this.serviceName}"
+        script.echo "🏷️ Versión: ${this.version}"
+        script.echo "🌍 Environment: ${this.environment}"
+        script.echo "🐳 Docker Push: ${this.dockerPush}"
+        script.echo "🚀 Deploy K8s: ${this.deployK8s}"
+        script.echo "✅ Require Approval: ${this.requireApproval}"
+        script.echo "🌿 Rama: ${branch}"
 
         def dockerfileContent = script.libraryResource('org/aomerge/docker/angular/Dockerfile.base')
         script.writeFile file: 'Dockerfile.base', text: dockerfileContent
@@ -180,6 +172,10 @@ class AngularPipeline implements Serializable {
         script.sh "mkdir -p test-results && chmod 777 test-results"
         script.sh "mkdir -p dist && chmod 777 dist"
         script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} ."
-
+    }
+    
+    // Método auxiliar para verificar si el pipeline debe continuar
+    boolean isValidExecution() {
+        return this.branchConfig?.isValidForExecution ?: false
     }
 }

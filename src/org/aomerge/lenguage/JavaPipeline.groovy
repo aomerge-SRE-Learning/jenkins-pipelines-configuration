@@ -1,4 +1,4 @@
-package org.aomerge.java
+package org.aomerge.lenguage
 import groovy.json.JsonSlurper
 import com.cloudbees.groovy.cps.NonCPS
 import org.aomerge.config.ClusterPipeline

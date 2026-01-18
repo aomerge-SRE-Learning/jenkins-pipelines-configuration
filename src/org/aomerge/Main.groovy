@@ -17,8 +17,7 @@ class Main implements Serializable {
         // Determinar la rama real: Si es PR, usar CHANGE_TARGET, sino usar BRANCH_NAME
         this.branch = env.CHANGE_TARGET ?: env.BRANCH_NAME
     }
-    
-    // Método para detectar si la ejecución fue manual
+        
     private boolean isManualTrigger(script) {
         def buildCauses = script.currentBuild.getBuildCauses()
         for (cause in buildCauses) {

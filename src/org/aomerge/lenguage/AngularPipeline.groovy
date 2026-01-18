@@ -154,6 +154,8 @@ class AngularPipeline implements Serializable {
         // Inicializar configuración de rama
         this.branchConfig = new BranchConfig(branch)
         
+        this.branchConfig.switchBranch(branch)        
+
         // Validar si debe ejecutarse (solución al problema del webhook)
         if (!this.branchConfig.shouldExecute(script, branch)) {
             script.currentBuild.result = 'NOT_BUILT'

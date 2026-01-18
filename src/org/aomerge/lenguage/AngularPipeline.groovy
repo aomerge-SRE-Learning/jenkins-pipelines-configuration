@@ -100,7 +100,7 @@ class AngularPipeline implements Serializable {
                                   "--set container.image=${imageFull} " +
                                   "--set app.name=${this.serviceName} " +
                                   "--set deployment.name=${this.serviceName} " +
-                                  "--set service.name=${this.serviceName}-service " +
+                                  "--set service.name=${this.serviceName}" +
                                   "--set probe.path=/${this.serviceName}/"
                 
                 // Ejecutamos

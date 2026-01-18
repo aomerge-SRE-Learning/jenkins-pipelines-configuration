@@ -10,4 +10,4 @@ dependencies:
   - name: ingress-config
     version: "0.1.0"
     repository: "file://./charts/ingress-config"
-    condition: ingress.enabled<
+    condition: ingress.enabled

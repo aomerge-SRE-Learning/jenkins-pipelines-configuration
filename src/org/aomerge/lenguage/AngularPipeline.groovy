@@ -180,8 +180,14 @@ class AngularPipeline implements Serializable {
         script.sh "podman build -f Dockerfile.base -t localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} ."
     }
     
-    // Método auxiliar para verificar si el pipeline debe continuar
-    boolean isValidExecution() {
-        return this.branchConfig?.isValidForExecution ?: false
+    // getter & setters
+    boolean getRequireApproval (){
+        return this.requireApproval
     }
+
+    String getServiceName (){
+        return this.serviceName
+    }
+
+    
 }

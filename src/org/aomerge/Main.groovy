@@ -85,11 +85,11 @@ class Main implements Serializable {
     }
 
     private void CDPipeline(pipeline, script){
-        if (pipeline.requireApproval) {
+        if (pipeline.getRequireApproval()) {
             script.stage('Approval') {
                 script.timeout(time: 30, unit: 'DAYS') {
                     script.input(
-                        message: "¿Desplegar ${pipeline.serviceName}?",
+                        message: "¿Desplegar ${pipeline.getServiceName()}?",
                         submitter: config?.approvers ?: 'admin',
                         ok: 'Aprobar'
                     )
@@ -129,12 +129,12 @@ class Main implements Serializable {
                 if (pipeline.metaClass.respondsTo(pipeline, 'isValidExecution') && 
                     !pipeline.isValidExecution()) {
                     script.echo "🛑 Pipeline detenido - Configuración de rama no válida"
-                    return  // Salir del pipeline sin ejecutar más stages
+                    return  
+                } else{
+                    this.switchCICD(env.BRANCH_NAME, pipeline, script)                                
                 }
             }
-        }        
-
-        this.switchCICD(env.BRANCH_NAME, pipeline, script)                                
+        }                
 
     }    
 }

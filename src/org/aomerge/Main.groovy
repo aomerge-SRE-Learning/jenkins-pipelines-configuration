@@ -85,11 +85,11 @@ class Main implements Serializable {
     }
 
     private void CDPipeline(pipeline, script){
-        if (pipeline.getRequireApproval()) {
+        if (pipeline.requireApproval) {
             script.stage('Approval') {
                 script.timeout(time: 30, unit: 'DAYS') {
                     script.input(
-                        message: "¿Desplegar ${pipeline.getServiceName()}?",
+                        message: "¿Desplegar ${pipeline.serviceName}?",
                         submitter: config?.approvers ?: 'admin',
                         ok: 'Aprobar'
                     )

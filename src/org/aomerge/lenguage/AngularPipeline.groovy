@@ -46,7 +46,7 @@ class AngularPipeline implements Serializable {
         def language = config?.language ?: 'angular'
         def serviceName = this.serviceName ?: 'app'
         def environment = this.environment ?: 'development'
-        def dockerRegistry = config?.dockerRegistry ?: 'localhost'
+        def dockerRegistry = config?.dockerRegistry ?: 'docker.io'
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
@@ -58,7 +58,7 @@ class AngularPipeline implements Serializable {
         script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'} ."
                 
         if (this.dockerPush) {
-            script.echo "🐳 Building Docker image..."            
+            script.echo "🐳 Pushing Docker image to registry..."            
             def version = this.version
             script.echo "Pushing image: ${dockerRegistry}/${serviceName}:${version}"
             
@@ -70,7 +70,20 @@ class AngularPipeline implements Serializable {
                 ]) {
                     script.sh('''
                         echo "$DOCKER_PASS" | podman login --username "$DOCKER_USER" --password-stdin docker.io
-                        podman push "$DOCKER_REGISTRY/$SERVICE_NAME:$VERSION"
+                        
+                        # Si el registry no es docker.io, construir URL completa
+                        if [ "$DOCKER_REGISTRY" != "docker.io" ] && [ "$DOCKER_REGISTRY" != "localhost" ]; then
+                            IMAGE_PATH="$DOCKER_REGISTRY/$SERVICE_NAME:$VERSION"
+                        else
+                            IMAGE_PATH="docker.io/$DOCKER_USER/$SERVICE_NAME:$VERSION"
+                        fi
+                        
+                        # Re-tag si es necesario
+                        podman tag "$DOCKER_REGISTRY/$SERVICE_NAME:$VERSION" "$IMAGE_PATH" || true
+                        
+                        # Push
+                        podman push "$IMAGE_PATH"
+                        
                         podman logout docker.io 2>/dev/null || true
                     ''')
                 }

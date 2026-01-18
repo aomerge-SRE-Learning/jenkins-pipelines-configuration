@@ -155,11 +155,11 @@ class Main implements Serializable {
                     !pipeline.isValidExecution()) {
                     script.echo "🛑 Pipeline detenido - Configuración de rama no válida"
                     return  
-                } else{
-                    this.switchCICD(env.BRANCH_NAME, pipeline, script)                                
                 }
-            }
-        }                
+            }            
+        }    
+        
+        this.switchCICD(env.BRANCH_NAME, pipeline, script)                                            
 
     }    
 }

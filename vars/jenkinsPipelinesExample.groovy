@@ -1,5 +1,6 @@
 import org.aomerge.Main
 import org.aomerge.config.Trash
+import com.cloudbees.groovy.cps.NonCPS
 
 def call(Map config = [:]) {    
     
@@ -21,8 +22,8 @@ def call(Map config = [:]) {
             currentStageName = 'Checkout'
             stage('Checkout') {
                 checkout scm
-                echo "🚀 Pipeline para: ${config.language}"
-                echo "📦 Servicio: ${config.serviceName ?: 'app'}"
+                echo "🚀 Pipeline para: ${config?.language ?: 'unknown'}"
+                echo "📦 Servicio: ${config?.serviceName ?: 'app'}"
                 echo "🌿 Rama actual: ${env.BRANCH_NAME}"
                 
                 // Información adicional para PRs

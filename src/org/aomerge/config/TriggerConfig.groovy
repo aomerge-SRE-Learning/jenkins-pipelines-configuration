@@ -1,4 +1,5 @@
 package org.aomerge.config
+import com.cloudbees.groovy.cps.NonCPS
 
 class TriggerConfig implements Serializable {
     
@@ -62,6 +63,7 @@ class TriggerConfig implements Serializable {
         ]
     }
     
+    @NonCPS
     private static String generateSecureToken() {
         def random = new Random()
         def chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'

@@ -1,4 +1,5 @@
 package org.aomerge.config
+import com.cloudbees.groovy.cps.NonCPS
 
 /**
  * Trash: Componente centralizado de limpieza para Jenkins Shared Library.
@@ -167,6 +168,7 @@ class Trash implements Serializable {
      * - No permite '..'
      * - No permite null/empty
      */
+    @NonCPS
     private boolean isSafeRelative(String p) {
         if (p == null) return false
         String s = p.trim()
@@ -176,6 +178,7 @@ class Trash implements Serializable {
         return true
     }
 
+    @NonCPS
     private String escapeSingleQuotes(String s) {
         // Para envolver en comillas simples en sh: ' -> '"'"'
         return s.replace("'", "'\"'\"'")

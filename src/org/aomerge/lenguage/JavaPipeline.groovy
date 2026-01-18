@@ -28,12 +28,15 @@ class JavaPipeline implements Serializable {
         
         if (this.dockerPush) {
             script.echo "🐳 Building Docker image..."
-            script.sh "podman build -t ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version} ."
+            def dockerRegistry = config?.dockerRegistry ?: 'localhost'
+            def serviceName = this.serviceName ?: 'java-app'
+            def version = this.version ?: 'latest'
+            script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${version} ."
             
             script.withCredentials([script.usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 script.sh """
                     echo \$DOCKER_PASS | podman login --username \$DOCKER_USER --password-stdin docker.io 
-                    podman push ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}
+                    podman push ${dockerRegistry}/${serviceName.toLowerCase()}:${version}
                     podman logout docker.io
                 """
             }
@@ -61,6 +64,12 @@ class JavaPipeline implements Serializable {
     private Map parseProjectInfo(script) {
         // Para Java, podríamos leer pom.xml o build.gradle, pero por ahora simplificamos
         // o usamos valores de config si están presentes
+        if (!config) {
+            return [
+                name: 'java-app',
+                version: '1.0.0'
+            ]
+        }
         return [
             name: config.serviceName ?: 'java-app',
             version: config.version ?: '1.0.0'

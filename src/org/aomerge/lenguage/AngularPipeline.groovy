@@ -21,13 +21,15 @@ class AngularPipeline implements Serializable {
     
     void test(script) {        
         script.echo "🧪 Ejecutando tests de Angular..."        
+        def language = config?.language ?: 'angular'
+        def serviceName = this.serviceName ?: 'app'
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/test-results:/app/test-results \\
                 -w /app \\
-                localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} npm run test:ci 
+                localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} npm run test:ci 
         """
     }
     
@@ -40,16 +42,20 @@ class AngularPipeline implements Serializable {
         nginxConfContent = nginxConfContent.replace('{{APP_NAME}}', this.serviceName)
         script.writeFile file: 'nginx.conf', text: nginxConfContent
         
-        script.echo "🔨 Building Angular application..."        
+        script.echo "🔨 Building Angular application..."
+        def language = config?.language ?: 'angular'
+        def serviceName = this.serviceName ?: 'app'
+        def environment = this.environment ?: 'development'
+        def dockerRegistry = config?.dockerRegistry ?: 'localhost'
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/dist:/app/dist \\
                 -w /app \\
-                localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} npm run build --configuration=${this.environment}
+                localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} npm run build --configuration=${environment}
         """
-        script.sh "podman build -t ${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version} ."
+        script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'} ."
                 
         if (this.dockerPush) {
             script.echo "🐳 Building Docker image..."
@@ -86,11 +92,11 @@ class AngularPipeline implements Serializable {
                 def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
                 def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}"
                 
-                if (!fileExists(valuesPath) && !fileExists(ingressValuesPath)) {
+                if (!script.fileExists(valuesPath) && !script.fileExists(ingressValuesPath)) {
                     script.error("❌ No se encontraron los archivos de configuración: '${valuesPath}' y '${ingressValuesPath}'. No se puede continuar con el despliegue.")
-                } else if (!fileExists(valuesPath)) {
+                } else if (!script.fileExists(valuesPath)) {
                     script.error("❌ No se encontró el archivo de configuración de valores: '${valuesPath}'. No se puede continuar con el despliegue.")
-                } else if (!fileExists(ingressValuesPath)) {
+                } else if (!script.fileExists(ingressValuesPath)) {
                     script.error("❌ No se encontró el archivo de configuración de ingress: '${ingressValuesPath}'. No se puede continuar con el despliegue.")
                 }
 
@@ -171,7 +177,9 @@ class AngularPipeline implements Serializable {
 
         script.sh "mkdir -p test-results && chmod 777 test-results"
         script.sh "mkdir -p dist && chmod 777 dist"
-        script.sh "podman build -f Dockerfile.base -t localhost/base-${config.language.toLowerCase()}-${this.serviceName.toLowerCase()} ."
+        def language = config?.language ?: 'angular'
+        def serviceName = this.serviceName ?: 'app'
+        script.sh "podman build -f Dockerfile.base -t localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} ."
     }
     
     // Método auxiliar para verificar si el pipeline debe continuar

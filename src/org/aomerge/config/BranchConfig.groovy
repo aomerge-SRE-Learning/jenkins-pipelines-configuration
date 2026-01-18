@@ -1,4 +1,5 @@
 package org.aomerge.config
+import com.cloudbees.groovy.cps.NonCPS
 
 class BranchConfig implements Serializable {
     boolean dockerPush = false
@@ -11,6 +12,7 @@ class BranchConfig implements Serializable {
         this.switchBranch(branch)
     }
 
+    @NonCPS
     public void switchBranch (branch){
         // Validación inicial para evitar ejecución duplicada en webhook
         def currentBranch = branch?.toLowerCase()?.trim()
@@ -78,6 +80,7 @@ class BranchConfig implements Serializable {
     }
 
     // Método para validar si esta rama debe ejecutarse (solución al problema del webhook)
+    @NonCPS
     public boolean shouldExecute(script, currentBranch = null) {
         if (!this.isValidForExecution) {
             script.echo "⚠️ Rama '${this.environment}' no configurada para ejecución automática"

@@ -3,6 +3,7 @@ package org.aomerge
 import org.aomerge.lenguage.AngularPipeline
 import org.aomerge.lenguage.JavaPipeline
 import org.aomerge.config.HelmPipeline
+import com.cloudbees.groovy.cps.NonCPS
 
 class Main implements Serializable {
     Map config
@@ -24,7 +25,7 @@ class Main implements Serializable {
                 case 'java':
                     return new JavaPipeline(config)
                 default:
-                    throw new RuntimeException("❌ Lenguaje no soportado: ${config.language}")
+                    throw new RuntimeException("❌ Lenguaje no soportado: ${lenguage}")
             }
     }
 
@@ -89,7 +90,7 @@ class Main implements Serializable {
                 script.timeout(time: 30, unit: 'DAYS') {
                     script.input(
                         message: "¿Desplegar ${pipeline.serviceName}?",
-                        submitter: config.approvers ?: 'admin',
+                        submitter: config?.approvers ?: 'admin',
                         ok: 'Aprobar'
                     )
                 }

@@ -154,12 +154,12 @@ class AngularPipeline implements Serializable {
         // Inicializar configuración de rama
         this.branchConfig = new BranchConfig(branch)
         
-        this.branchConfig.switchBranch(branch)        
+        def environment = this.branchConfig.switchBranch(branch)        
 
         // Validar si debe ejecutarse (solución al problema del webhook)
-        if (!this.branchConfig.shouldExecute(script, branch)) {
+        if (!this.branchConfig.shouldExecute(script, environment)) {
             script.currentBuild.result = 'NOT_BUILT'
-            script.echo "🚫 Pipeline cancelado - Rama '${branch}' no válida o duplicada"
+            script.echo "🚫 Pipeline cancelado - Rama '${environment}' no válida o duplicada"
             return
         }
         

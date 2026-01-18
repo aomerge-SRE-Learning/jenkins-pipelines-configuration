@@ -13,7 +13,7 @@ class BranchConfig implements Serializable {
     }
 
     @NonCPS
-    public void switchBranch (branch){
+    public String switchBranch (branch){
         // Validación inicial para evitar ejecución duplicada en webhook
         def currentBranch = branch?.toLowerCase()?.trim()
         
@@ -77,6 +77,7 @@ class BranchConfig implements Serializable {
                 }
                 break
         }
+        return this.environment
     }
 
     // Método para validar si esta rama debe ejecutarse (solución al problema del webhook)

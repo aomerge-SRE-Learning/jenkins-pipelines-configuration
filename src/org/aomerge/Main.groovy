@@ -18,6 +18,19 @@ class Main implements Serializable {
         this.branch = env.CHANGE_TARGET ?: env.BRANCH_NAME
     }
     
+    // Método para detectar si la ejecución fue manual
+    private boolean isManualTrigger(script) {
+        def buildCauses = script.currentBuild.getBuildCauses()
+        for (cause in buildCauses) {
+            // Detectar UserIdCause (ejecución manual desde UI)
+            if (cause._class?.contains('UserIdCause')) {
+                script.echo "🖱️ Ejecución MANUAL detectada por: ${cause.userName ?: 'usuario'}"
+                return true
+            }
+        }
+        return false
+    }
+    
     private def switchLenguage(lenguage){
             switch(lenguage?.toLowerCase()) {
                 case 'angular':
@@ -30,9 +43,19 @@ class Main implements Serializable {
     }
 
     private void switchCICD(branchName, pipeline, script){
-        if (branchName?.toLowerCase()?.startsWith('pr')) {
+        // Detectar si es ejecución manual
+        boolean isManual = isManualTrigger(script)
+        
+        if (isManual) {
+            script.echo "✅ Ejecución manual - Ejecutando proceso completo (CI/CD)"
+            // En ejecución manual, ejecutar tanto CI como CD
+            this.CIPipeline(pipeline, script)
+            this.CDPipeline(pipeline, script)
+        } else if (branchName?.toLowerCase()?.startsWith('pr')) {
+            script.echo "🔀 PR detectado - Solo CI"
             this.CIPipeline(pipeline, script)
         } else if (branchName) {
+            script.echo "🚀 Push detectado - Ejecutando CD completo"
             this.CDPipeline(pipeline, script)            
         }
     }
@@ -85,11 +108,13 @@ class Main implements Serializable {
     }
 
     private void CDPipeline(pipeline, script){
+        script.echo "pipeline.requireApproval: ${pipeline.requireApproval}"
         if (pipeline.requireApproval) {
             script.stage('Approval') {
+                def serviceName = pipeline.serviceName ?: config?.serviceName ?: 'aplicación'
                 script.timeout(time: 30, unit: 'DAYS') {
                     script.input(
-                        message: "¿Desplegar ${pipeline.serviceName}?",
+                        message: "¿Desplegar ${serviceName}?",
                         submitter: config?.approvers ?: 'admin',
                         ok: 'Aprobar'
                     )

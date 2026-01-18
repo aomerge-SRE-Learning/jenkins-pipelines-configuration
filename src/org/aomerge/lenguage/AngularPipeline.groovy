@@ -58,9 +58,7 @@ class AngularPipeline implements Serializable {
         script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'} ."
                 
         if (this.dockerPush) {
-            script.echo "🐳 Building Docker image..."
-            def dockerRegistry = config.dockerRegistry
-            def serviceName = this.serviceName.toLowerCase()
+            script.echo "🐳 Building Docker image..."            
             def version = this.version
             script.echo "Pushing image: ${dockerRegistry}/${serviceName}:${version}"
             

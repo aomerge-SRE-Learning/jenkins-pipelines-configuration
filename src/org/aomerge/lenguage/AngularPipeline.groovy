@@ -193,10 +193,10 @@ class AngularPipeline implements Serializable {
         this.environment = this.branchConfig.environment
         this.dockerPush = this.branchConfig.dockerPush
         this.deployK8s = this.branchConfig.deployK8s
-        this.requireApproval = this.branchConfig.requireApproval
+        this.requireApproval = this.branchConfig.requireApproval        
         
         script.echo "📦 Nombre del servicio: ${this.serviceName}"
-        script.echo "🏷️ Versión: ${this.version}"
+        script.echo "🏷️ Versión: ${this.version}"        
         script.echo "🌍 Environment: ${this.environment}"
         script.echo "🐳 Docker Push: ${this.dockerPush}"
         script.echo "🚀 Deploy K8s: ${this.deployK8s}"

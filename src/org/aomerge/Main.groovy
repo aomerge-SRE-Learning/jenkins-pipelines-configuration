@@ -43,7 +43,8 @@ class Main implements Serializable {
 
     private void switchCICD(branchName, pipeline, script){        
         boolean isManual = isManualTrigger(script)
-        if (isManual) {
+
+        if (isManual && !script.env.CHANGE_ID) {
             script.echo "✅ Ejecución manual - Ejecutando proceso completo (CI/CD)"
             // En ejecución manual, ejecutar tanto CI como CD
             this.CIPipeline(pipeline, script)
@@ -155,6 +156,7 @@ class Main implements Serializable {
             script.echo "🔀 Rama fuente del PR (CHANGE_BRANCH): ${env.CHANGE_BRANCH}"
             script.echo "🎯 Rama destino del PR (CHANGE_TARGET): ${env.CHANGE_TARGET}"
             script.echo "🔧 Rama procesada: ${this.branch}"
+            script.echo "🌍 Change ID: ${env.CHANGE_ID}"
         }
         
         script.stage('Config') {

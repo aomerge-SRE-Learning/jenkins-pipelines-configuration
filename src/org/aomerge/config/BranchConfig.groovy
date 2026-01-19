@@ -80,8 +80,7 @@ class BranchConfig implements Serializable {
     }
     
     @NonCPS
-    public boolean shouldExecute(script, currentBranch = null) {
-        this.switchBranch(currentBranch)
+    public boolean shouldExecute(script, currentBranch = null) {        
 
         if (!this.isValidForExecution) {
             script.echo "⚠️ Rama '${this.environment}' no configurada para ejecución automática"

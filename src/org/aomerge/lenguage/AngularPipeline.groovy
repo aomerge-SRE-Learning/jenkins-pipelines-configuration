@@ -111,6 +111,7 @@ class AngularPipeline implements Serializable {
                         podman logout docker.io 2>/dev/null || true
                     ''')
                     // Guardar la versión en un archivo para futuras ejecuciones
+                    this.version = script.env.VERSION
                     script.writeFile file: 'VERSION', text: this.version                                        
                     script.echo "Imagen Docker subida correctamente: $IMAGE_PATH"
                     script.echo "Nueva versión desplegada: $VERSION"

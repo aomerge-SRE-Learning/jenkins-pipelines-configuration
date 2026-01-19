@@ -147,18 +147,17 @@ class Main implements Serializable {
         
         script.stage('Config') {
             if (pipeline.metaClass.respondsTo(pipeline, 'config')) {
-                pipeline.config(script, this.branch)
-                
-                // Verificar si el pipeline debe continuar después de la configuración
-                if (pipeline.metaClass.respondsTo(pipeline, 'isValidExecution') && 
-                    !pipeline.isValidExecution()) {
-                    script.echo "🛑 Pipeline detenido - Configuración de rama no válida"
-                    return  
-                }
+                pipeline.config(script, this.branch)                                
             }            
         }    
-        
-        this.switchCICD(env.BRANCH_NAME, pipeline, script)                                            
+                
+        if (pipeline.metaClass.respondsTo(pipeline, 'isValidExecution') && 
+            !pipeline.isValidExecution()) {
+            script.echo "🛑 Pipeline detenido - Configuración de rama no válida"
+            return  
+        } else{
+            this.switchCICD(env.BRANCH_NAME, pipeline, script)                                            
+        }
 
     }    
 }

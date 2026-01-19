@@ -6,7 +6,7 @@ class BranchConfig implements Serializable {
     boolean deployK8s = false
     boolean requireApproval = false
     String environment
-    boolean isValidForExecution = true  // Nueva propiedad para controlar ejecución
+    boolean isValidForExecution = true  
 
     BranchConfig(branch){
         this.switchBranch(branch)
@@ -76,25 +76,37 @@ class BranchConfig implements Serializable {
                     this.isValidForExecution = false
                 }
                 break
-        }
-        return this.environment
+        }        
     }
-
-    // Método para validar si esta rama debe ejecutarse (solución al problema del webhook)
+    
     @NonCPS
     public boolean shouldExecute(script, currentBranch = null) {
+        this.switchBranch(currentBranch)
+
         if (!this.isValidForExecution) {
             script.echo "⚠️ Rama '${this.environment}' no configurada para ejecución automática"
             return false
         }
-        
-        // Validación específica para webhooks que evita ejecución duplicada
+                
         def realBranch = currentBranch ?: script.env.BRANCH_NAME
-        if (realBranch?.toLowerCase() != this.environment?.toLowerCase() && 
-            !realBranch?.toLowerCase()?.contains(this.environment?.toLowerCase())) {
-            script.echo "⚠️ Rama actual '${realBranch}' no coincide con configuración '${this.environment}' - Saltando ejecución"
+        def changeTarget = script.env.CHANGE_TARGET
+        def changeBranch = script.env.CHANGE_BRANCH
+
+        // Si CHANGE_TARGET es null, consideramos ejecución manual
+        if (changeTarget == null && changeBranch == null) {
+            script.echo "ℹ️ Ejecución manual detectada (CHANGE_TARGET es null)"
+            return true
+        }
+
+        // Validar que solo se ejecute en la rama destino (target), no en la fuente (source)
+        if (realBranch?.toLowerCase() == changeBranch?.toLowerCase()) {
+            script.echo "⛔ Ejecución en rama fuente '${realBranch}' detectada (source branch) - Cancelando ejecución"
             return false
         }
+        // if (realBranch?.toLowerCase() != changeTarget?.toLowerCase()) {
+        //     script.echo "⚠️ Rama actual '${realBranch}' no coincide con rama destino '${changeTarget}' - Saltando ejecución"
+        //     return false
+        // }
         
         return true
     }

@@ -41,16 +41,14 @@ class Main implements Serializable {
             }
     }
 
-    private void switchCICD(branchName, pipeline, script){
-        // Detectar si es ejecución manual
+    private void switchCICD(branchName, pipeline, script){        
         boolean isManual = isManualTrigger(script)
-        
         if (isManual) {
             script.echo "✅ Ejecución manual - Ejecutando proceso completo (CI/CD)"
             // En ejecución manual, ejecutar tanto CI como CD
             this.CIPipeline(pipeline, script)
             this.CDPipeline(pipeline, script)
-        } else if (branchName?.toLowerCase()?.startsWith('pr')) {
+        }else if (script.env.CHANGE_ID) {
             script.echo "🔀 PR detectado - Solo CI"
             this.CIPipeline(pipeline, script)
         } else if (branchName) {
@@ -69,12 +67,16 @@ class Main implements Serializable {
         script.stage('Build') {
             pipeline.build(script)
         }
+
+        script.stage("Remove files"){
+            pipeline.trash(script)
+        }
     }
 
     private void CDPipeline(pipeline, script){
         script.stage('Copy values helm') {
             def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
-            def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"                    
+            def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
             if (config.configRepoUrl) {                
                 script.echo "Source: External Repository ${config.configRepoUrl}"
                 script.checkout([
@@ -169,7 +171,7 @@ class Main implements Serializable {
             this.switchCICD(env.BRANCH_NAME, pipeline, script)                                            
         }
 
-        
+
 
     }    
 }

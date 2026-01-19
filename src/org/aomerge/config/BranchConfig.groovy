@@ -86,27 +86,6 @@ class BranchConfig implements Serializable {
             script.echo "⚠️ Rama '${this.environment}' no configurada para ejecución automática"
             return false
         }
-                
-        def realBranch = currentBranch ?: script.env.BRANCH_NAME
-        def changeTarget = script.env.CHANGE_TARGET
-        def changeBranch = script.env.CHANGE_BRANCH
-
-        // Si CHANGE_TARGET es null, consideramos ejecución manual
-        if (changeTarget == null && changeBranch == null) {
-            script.echo "ℹ️ Ejecución manual detectada (CHANGE_TARGET es null)"
-            return true
-        }
-
-        // Validar que solo se ejecute en la rama destino (target), no en la fuente (source)
-        if (realBranch?.toLowerCase() == changeBranch?.toLowerCase()) {
-            script.echo "⛔ Ejecución en rama fuente '${realBranch}' detectada (source branch) - Cancelando ejecución"
-            return false
-        }
-        // if (realBranch?.toLowerCase() != changeTarget?.toLowerCase()) {
-        //     script.echo "⚠️ Rama actual '${realBranch}' no coincide con rama destino '${changeTarget}' - Saltando ejecución"
-        //     return false
-        // }
-        
         return true
     }    
 }

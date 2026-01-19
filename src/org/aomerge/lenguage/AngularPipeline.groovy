@@ -70,22 +70,50 @@ class AngularPipeline implements Serializable {
                 ]) {
                     script.sh('''
                         echo "$DOCKER_PASS" | podman login --username "$DOCKER_USER" --password-stdin docker.io
-                        
-                        # Si el registry no es docker.io, construir URL completa
+
+                        # Determinar el path de la imagen
                         if [ "$DOCKER_REGISTRY" != "docker.io" ] && [ "$DOCKER_REGISTRY" != "localhost" ]; then
                             IMAGE_PATH="$DOCKER_REGISTRY/$SERVICE_NAME:$VERSION"
                         else
                             IMAGE_PATH="docker.io/$DOCKER_USER/$SERVICE_NAME:$VERSION"
                         fi
-                        
+
+                        # Intentar hacer pull de la imagen para ver si ya existe
+                        if podman pull "$IMAGE_PATH" > /dev/null 2>&1; then
+                            echo "La imagen $IMAGE_PATH ya existe. Buscando siguiente versión disponible..."
+                            BASE_VERSION="$VERSION"
+                            SUFFIX=1
+                            while true; do
+                                NEW_VERSION="${BASE_VERSION}.a${SUFFIX}"
+                                if [ "$DOCKER_REGISTRY" != "docker.io" ] && [ "$DOCKER_REGISTRY" != "localhost" ]; then
+                                    NEW_IMAGE_PATH="$DOCKER_REGISTRY/$SERVICE_NAME:$NEW_VERSION"
+                                else
+                                    NEW_IMAGE_PATH="docker.io/$DOCKER_USER/$SERVICE_NAME:$NEW_VERSION"
+                                fi
+                                if ! podman pull "$NEW_IMAGE_PATH" > /dev/null 2>&1; then
+                                    echo "Usando nueva versión: $NEW_VERSION"
+                                    IMAGE_PATH="$NEW_IMAGE_PATH"
+                                    VERSION="$NEW_VERSION"
+                                    break
+                                fi
+                                SUFFIX=$((SUFFIX+1))
+                            done
+                        else
+                            echo "La imagen $IMAGE_PATH no existe. Usando versión original."
+                        fi
+
                         # Re-tag si es necesario
-                        podman tag "$DOCKER_REGISTRY/$SERVICE_NAME:$VERSION" "$IMAGE_PATH" || true
-                        
+                        podman tag "$DOCKER_REGISTRY/$SERVICE_NAME:${version}" "$IMAGE_PATH" || true
+
                         # Push
                         podman push "$IMAGE_PATH"
-                        
+
                         podman logout docker.io 2>/dev/null || true
                     ''')
+                    // Guardar la versión en un archivo para futuras ejecuciones
+                    script.writeFile file: 'VERSION', text: this.version                                        
+                    script.echo "Imagen Docker subida correctamente: $IMAGE_PATH"
+                    script.echo "Nueva versión desplegada: $VERSION"
                 }
             }
         }
@@ -145,13 +173,6 @@ class AngularPipeline implements Serializable {
     void config(script, branch){
         // Inicializar configuración de rama
         this.branchConfig = new BranchConfig(branch)                
-
-        // Validar si debe ejecutarse (solución al problema del webhook)
-        if (!this.branchConfig.shouldExecute(script, environment)) {
-            script.currentBuild.result = 'NOT_BUILT'
-            script.echo "🚫 Pipeline cancelado - Rama '${environment}' no válida o duplicada"
-            return
-        }
         
         def packageJson = script.readFile(file: 'package.json')
         def pkgInfo = parsePackageJson(packageJson)
@@ -159,7 +180,13 @@ class AngularPipeline implements Serializable {
         def timestamp = new Date().format("yyyyMMdd")
         script.echo "Timestamp: ${timestamp}"       
         this.serviceName = pkgInfo.name
-        this.version = "${pkgInfo.version}-${timestamp}.${script.env.BUILD_NUMBER}"
+        // Leer versión persistida si existe, si no usar la de package.json
+        if (script.fileExists('VERSION')) {
+            this.version = script.readFile('VERSION').trim()
+            script.echo "🔄 Usando versión persistida: ${this.version}"
+        } else {
+            this.version = "${pkgInfo.version}"
+        }        
         
         // Configurar propiedades según la rama usando BranchConfig
         this.environment = this.branchConfig.environment
@@ -183,6 +210,12 @@ class AngularPipeline implements Serializable {
         def language = config?.language ?: 'angular'
         def serviceName = this.serviceName ?: 'app'
         script.sh "podman build -f Dockerfile.base -t localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} ."
+
+        if (!this.branchConfig.shouldExecute(script, environment)) {
+            script.currentBuild.result = 'NOT_BUILT'
+            script.echo "🚫 Pipeline cancelado - Rama '${environment}' no válida o duplicada"
+            return
+        }
     }
     
     // Método auxiliar para verificar si el pipeline debe continuar

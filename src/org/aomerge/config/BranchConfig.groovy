@@ -108,21 +108,5 @@ class BranchConfig implements Serializable {
         // }
         
         return true
-    }
-
-    public boolean getDockerPush(){
-        return this.dockerPush
-    }
-
-    public boolean getDeployK8s(){
-        return this.deployK8s
-    }
-
-    public boolean getRequireApproval(){
-        return this.requireApproval
-    }
-
-    public String getEnvironment(){
-        return this.environment
-    }
+    }    
 }

@@ -170,10 +170,10 @@ class AngularPipeline implements Serializable {
         this.version = "${pkgInfo.version}-${timestamp}.${script.env.BUILD_NUMBER}"
         
         // Configurar propiedades según la rama usando BranchConfig
-        this.environment = this.branchConfig.getEnvironment()
-        this.dockerPush = this.branchConfig.getDockerPush()
-        this.deployK8s = this.branchConfig.getDeployK8s()
-        this.requireApproval = this.branchConfig.getRequireApproval()
+        this.environment = this.branchConfig.environment
+        this.dockerPush = this.branchConfig.dockerPush
+        this.deployK8s = this.branchConfig.deployK8s
+        this.requireApproval = this.branchConfig.requireApproval
         
         script.echo "📦 Nombre del servicio: ${this.serviceName}"
         script.echo "🏷️ Versión: ${this.version}"

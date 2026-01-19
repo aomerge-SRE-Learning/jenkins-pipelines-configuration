@@ -101,15 +101,7 @@ class AngularPipeline implements Serializable {
                 def chartPath = "./helm"
                 def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
                 def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
-                def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}"
-                
-                if (!script.fileExists(valuesPath) && !script.fileExists(ingressValuesPath)) {
-                    script.error("❌ No se encontraron los archivos de configuración: '${valuesPath}' y '${ingressValuesPath}'. No se puede continuar con el despliegue.")
-                } else if (!script.fileExists(valuesPath)) {
-                    script.error("❌ No se encontró el archivo de configuración de valores: '${valuesPath}'. No se puede continuar con el despliegue.")
-                } else if (!script.fileExists(ingressValuesPath)) {
-                    script.error("❌ No se encontró el archivo de configuración de ingress: '${ingressValuesPath}'. No se puede continuar con el despliegue.")
-                }
+                def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}"                            
 
                 def helmCommand = "upgrade --install ${this.serviceName} ${chartPath} " +
                                   "-f ${valuesPath} " +

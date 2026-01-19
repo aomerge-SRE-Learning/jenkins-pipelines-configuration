@@ -61,41 +61,6 @@ class Main implements Serializable {
 
     private void CIPipeline(pipeline, script){
 
-        script.stage('Copy values helm') {                    
-                if (config.configRepoUrl) {
-                    // Opción A: Clonar desde un repositorio externo
-                    script.echo "Source: External Repository ${config.configRepoUrl}"
-                    script.checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: this.branch ?: 'dev']],
-                        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'config']],
-                        userRemoteConfigs: [[
-                            url: config.configRepoUrl, 
-                            credentialsId: "aomerge"
-                        ]]
-                    ])
-                } else {
-                    // Opción B: Usar la lógica actual de la librería (libraryResource)
-                    def helmPipeline = new HelmPipeline()
-                    helmPipeline.copyHelm(script)
-                }
-                
-                script.sh """
-                    echo "📂 Contenido de la carpeta helm:"
-                    ls -R config
-                """                    
-        }
-        
-        script.stage('Copy helm') {            
-            def helmPipeline = new HelmPipeline()
-            helmPipeline.copyHelm(script)
-            script.sh """
-                cd helm  
-                ls
-                cd ..
-            """
-        }
-
         // Ejecutar stages comunes
         script.stage('Test') {
             pipeline.test(script)
@@ -107,6 +72,51 @@ class Main implements Serializable {
     }
 
     private void CDPipeline(pipeline, script){
+        script.stage('Copy values helm') {
+            def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
+            def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"                    
+            if (config.configRepoUrl) {                
+                script.echo "Source: External Repository ${config.configRepoUrl}"
+                script.checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: this.branch ?: 'dev']],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'config']],
+                    userRemoteConfigs: [[
+                        url: config.configRepoUrl, 
+                        credentialsId: "aomerge"
+                    ]]
+                ])
+            } else {
+                // Opción B: Usar la lógica actual de la librería (libraryResource)
+                def helmPipeline = new HelmPipeline()
+                helmPipeline.copyHelm(script)
+            }
+            
+            script.sh """
+                echo "📂 Contenido de la carpeta helm:"
+                ls -R config                
+            """       
+            if (!script.fileExists(valuesPath) && !script.fileExists(ingressValuesPath)) {
+                script.error("❌ No se encontraron los archivos de configuración: '${valuesPath}' y '${ingressValuesPath}'. No se puede continuar con el despliegue.")
+            } else if (!script.fileExists(valuesPath)) {
+                script.error("❌ No se encontró el archivo de configuración de valores: '${valuesPath}'. No se puede continuar con el despliegue.")
+            } else if (!script.fileExists(ingressValuesPath)) {
+                script.error("❌ No se encontró el archivo de configuración de ingress: '${ingressValuesPath}'. No se puede continuar con el despliegue.")
+            }             
+        }
+        
+        script.stage('Copy helm') {            
+            def helmPipeline = new HelmPipeline()
+            helmPipeline.copyHelm(script)
+            script.sh """
+                cd helm  
+                ls
+                cd templates
+                ls
+                cd ../..
+            """
+        }
+
         script.echo "pipeline.requireApproval: ${pipeline.requireApproval}"
         if (pipeline.requireApproval) {
             script.stage('Approval') {
@@ -158,6 +168,8 @@ class Main implements Serializable {
         } else{
             this.switchCICD(env.BRANCH_NAME, pipeline, script)                                            
         }
+
+        
 
     }    
 }

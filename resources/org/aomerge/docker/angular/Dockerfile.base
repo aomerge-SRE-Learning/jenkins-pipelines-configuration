@@ -4,12 +4,13 @@ WORKDIR /app
 # Configurar variable de entorno para que Karma encuentre Chromium (ya instalado en la imagen base)
 ENV CHROME_BIN=/usr/bin/chromium-browser
 
-# Instalar dependencias con lockfile si existe
+# Copiar primero sólo archivos de dependencias para aprovechar cache de capas
 COPY package*.json ./
 COPY package-lock.json ./
-RUN npm set registry https://registry.npmmirror.com/
-RUN npm set fetch-timeout 300000 && npm set fetch-retries 10 && npm ci
+RUN npm set registry https://registry.npmmirror.com/ && \
+	npm set fetch-timeout 300000 && npm set fetch-retries 10 && npm ci
 
+# Ahora copiar archivos de configuración y resto del proyecto
 COPY angular.json ./
 COPY tsconfig.json ./
 COPY tsconfig.app.json ./

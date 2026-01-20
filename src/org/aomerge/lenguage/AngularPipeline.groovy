@@ -23,13 +23,29 @@ class AngularPipeline implements Serializable {
         script.echo "🧪 Ejecutando tests de Angular..."        
         def language = config?.language ?: 'angular'
         def serviceName = this.serviceName ?: 'app'
+        def volumeName = "node-modules-${serviceName.toLowerCase()}"
+        
+        // Crear volumen si no existe
+        script.sh "podman volume inspect ${volumeName} > /dev/null 2>&1 || podman volume create ${volumeName}"
+        
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/test-results:/app/test-results \\
+                -v \$(pwd)/package-lock.json:/app/package-lock.json:ro \\
+                -v ${volumeName}:/app/node_modules \\
                 -w /app \\
-                localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} npm run test:ci 
+                localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} sh -c '
+                    if [ ! -f /app/node_modules/.package-lock.json ] || ! cmp -s /app/package-lock.json /app/node_modules/.package-lock.json; then
+                        echo "📦 Cambios en dependencias detectados. Ejecutando npm ci..."
+                        npm ci
+                        cp /app/package-lock.json /app/node_modules/.package-lock.json
+                    else
+                        echo "✅ Dependencias actualizadas. Saltando npm ci."
+                    fi
+                    npm run test:ci
+                '
         """
     }
     
@@ -47,13 +63,29 @@ class AngularPipeline implements Serializable {
         def serviceName = this.serviceName ?: 'app'
         def environment = this.environment ?: 'development'
         def dockerRegistry = config?.dockerRegistry ?: 'docker.io'
+        def volumeName = "node-modules-${serviceName.toLowerCase()}"
+        
+        // Crear volumen si no existe
+        script.sh "podman volume inspect ${volumeName} > /dev/null 2>&1 || podman volume create ${volumeName}"
+        
         script.sh """
             podman run --rm \\
                 -v \$(pwd)/src:/app/src \\
                 -v \$(pwd)/public:/app/public \\
                 -v \$(pwd)/dist:/app/dist \\
+                -v \$(pwd)/package-lock.json:/app/package-lock.json:ro \\
+                -v ${volumeName}:/app/node_modules \\
                 -w /app \\
-                localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} npm run build --configuration=${environment}
+                localhost/base-${language.toLowerCase()}-${serviceName.toLowerCase()} sh -c '
+                    if [ ! -f /app/node_modules/.package-lock.json ] || ! cmp -s /app/package-lock.json /app/node_modules/.package-lock.json; then
+                        echo "📦 Cambios en dependencias detectados. Ejecutando npm ci..."
+                        npm ci
+                        cp /app/package-lock.json /app/node_modules/.package-lock.json
+                    else
+                        echo "✅ Dependencias actualizadas. Saltando npm ci."
+                    fi
+                    npm run build --configuration=${environment}
+                '
         """
         script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'} ."
                 

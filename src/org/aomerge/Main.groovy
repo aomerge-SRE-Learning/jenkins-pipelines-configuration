@@ -75,9 +75,11 @@ class Main implements Serializable {
     }
 
     private void CDPipeline(pipeline, script){
+        def serviceName = pipeline.serviceName ?: config?.serviceName ?: 'app'
+        
         script.stage('Copy values helm') {
-            def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
-            def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
+            def valuesPath = "config/${serviceName}/deploy-helm.yaml"
+            def ingressValuesPath = "config/${serviceName}/ingress-helm.yaml"
             if (config.configRepoUrl) {                
                 script.echo "Source: External Repository ${config.configRepoUrl}"
                 script.checkout([

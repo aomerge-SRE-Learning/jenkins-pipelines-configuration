@@ -110,6 +110,13 @@ class Trash implements Serializable {
             tail -n +${keepCount + 1} | \\
             xargs -r -I {} podman rmi ${imageName}:{} || true
         """
+        // Elimina imágenes huérfanas (dangling) que no tienen tag asociado
+        steps.echo("[trash] 🧹 Limpiando imágenes huérfanas (dangling)...")
+        String orphanCmd = """
+            podman images --filter "dangling=true" -q | \\
+            xargs -r podman rmi || true
+        """
+        steps.sh(script: orphanCmd, label: "trash: garbage collection de imagenes huerfanas")
         
         steps.sh(script: cmd, label: "trash: garbage collection de imagenes")
     }

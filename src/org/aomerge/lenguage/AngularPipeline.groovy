@@ -116,9 +116,9 @@ class AngularPipeline implements Serializable {
                     this.version = script.readFile('.version.tmp').trim()
                     script.sh('rm -f .version.tmp')
                     // Persistir la versión en archivo VERSION para siguientes ejecuciones
-                    script.writeFile file: 'VERSION', text: this.version                                                            
-                    script.echo "Imagen Docker subida correctamente: $IMAGE_PATH"
-                    script.echo "Nueva versión desplegada: $VERSION"
+                    script.writeFile file: 'VERSION', text: this.version                                                     
+                    script.echo "Imagen Docker subida correctamente: ${dockerRegistry}/${serviceName}:${this.version}"
+                    script.echo "Nueva versión desplegada: ${this.version}"
                 }
             }
         }

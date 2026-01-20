@@ -78,8 +78,8 @@ class AngularPipeline implements Serializable {
                             IMAGE_PATH="docker.io/$DOCKER_USER/$SERVICE_NAME:$VERSION"
                         fi
 
-                        # Validar si la imagen ya existe en el registry
-                        if podman pull "$IMAGE_PATH" > /dev/null 2>&1; then
+                        # Validar si la imagen ya existe en el registry (sin descargar)
+                        if skopeo inspect "docker://$IMAGE_PATH" > /dev/null 2>&1; then
                             echo "❌ ERROR: La imagen $IMAGE_PATH ya existe en el registry."
                             echo "Por favor, actualiza la versión en package.json antes de hacer push."
                             podman logout docker.io 2>/dev/null || true

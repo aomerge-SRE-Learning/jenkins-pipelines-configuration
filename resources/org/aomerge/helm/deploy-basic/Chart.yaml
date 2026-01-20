@@ -5,9 +5,3 @@ description: A Helm chart for basic deployment and service
 type: application
 version: 0.1.0
 appVersion: "1.0"
-
-dependencies:
-  - name: ingress-config
-    version: "0.1.0"
-    repository: "file://./charts/ingress-config"
-    condition: ingress.enabled

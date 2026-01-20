@@ -125,7 +125,6 @@ class Main implements Serializable {
         script.echo "pipeline.requireApproval: ${pipeline.requireApproval}"
         if (pipeline.requireApproval) {
             script.stage('Approval') {
-                def serviceName = pipeline.serviceName ?: config?.serviceName ?: 'aplicación'
                 script.timeout(time: 30, unit: 'DAYS') {
                     script.input(
                         message: "¿Desplegar ${serviceName}?",

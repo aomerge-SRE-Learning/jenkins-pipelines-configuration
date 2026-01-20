@@ -168,7 +168,11 @@ class AngularPipeline implements Serializable {
         this.requireApproval = this.branchConfig.requireApproval
         
         // Usar siempre la versión del package.json
-        this.version = "${pkgInfo.version}"
+        if (branch == "main" || branch == "master") {
+            this.version = pkgInfo.version
+        } else {
+            this.version = "${branch}-${pkgInfo.version}"
+        }        
         
         script.echo "📦 Nombre del servicio: ${this.serviceName}"
         script.echo "🏷️ Versión: ${this.version}"        

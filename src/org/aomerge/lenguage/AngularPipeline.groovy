@@ -134,22 +134,26 @@ class AngularPipeline implements Serializable {
     
     void deploy(script) {
         script.echo "🚀 Desplegando Angular a ${this.environment}..."
+        def chartPath = "./helm"
+        def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
+        def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
+        def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}" 
+        script.echo "Contenido de ${valuesPath}:"
+        script.sh "cat ${valuesPath}"
+
+        script.echo "Contenido de ${ingressValuesPath}:"
+        script.sh "cat ${ingressValuesPath}"        
 
         if (this.deployK8s) {
             def k8s = new ClusterPipeline("dev-labs")
-            k8s.connect(script) {                
-                def chartPath = "./helm"
-                def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
-                def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
-                def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}"                            
-
+            k8s.connect(script) {                            
                 def helmCommand = "upgrade --install ${this.serviceName} ${chartPath} " +
                                   "-f ${valuesPath} " +
                                   "-f ${ingressValuesPath} " +
                                   "--set container.image=${imageFull} " +
                                   "--set app.name=${this.serviceName} " +
                                   "--set deployment.name=${this.serviceName} " +
-                                  "--set service.name=${this.serviceName}" +
+                                  "--set service.name=${this.serviceName} " +
                                   "--set probe.path=/${this.serviceName}/"
                 
                 // Ejecutamos

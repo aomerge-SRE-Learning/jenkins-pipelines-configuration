@@ -57,6 +57,17 @@ class AngularPipeline implements Serializable {
         """
         script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'} ."
                 
+        if (this.dockerPush) {
+            script.echo "🐳 Pushing Docker image to registry..."            
+            def version = this.version
+            script.echo "Pushing image: ${dockerRegistry}/${serviceName}:${version}"
+            
+            script.withCredentials([script.usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                script.withEnv([
+                    "DOCKER_REGISTRY=${dockerRegistry}",
+                    "SERVICE_NAME=${serviceName}",
+                    "VERSION=${version}"
+                ]) {
                     script.sh('''
                         echo "$DOCKER_PASS" | podman login --username "$DOCKER_USER" --password-stdin docker.io
 
@@ -96,18 +107,16 @@ class AngularPipeline implements Serializable {
 
                         # Push
                         podman push "$IMAGE_PATH"
-
                         # Guardar la versión final en archivo temporal para Groovy
                         echo "$VERSION" > .version.tmp
-
+                        
                         podman logout docker.io 2>/dev/null || true
                     ''')
-                    // Leer la versión final calculada en shell
+                    // Guardar la versión en un archivo para futuras ejecuciones
                     this.version = script.readFile('.version.tmp').trim()
                     script.sh('rm -f .version.tmp')
                     // Persistir la versión en archivo VERSION para siguientes ejecuciones
-                    script.writeFile file: 'VERSION', text: this.version
-                    
+                    script.writeFile file: 'VERSION', text: this.version                                                            
                     script.echo "Imagen Docker subida correctamente: $IMAGE_PATH"
                     script.echo "Nueva versión desplegada: $VERSION"
                 }

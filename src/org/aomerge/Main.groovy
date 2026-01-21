@@ -101,6 +101,14 @@ class Main implements Serializable {
                 echo "📂 Contenido de la carpeta helm:"
                 ls -R config                
             """       
+
+            // Intentar cargar configuración externa (setting.json) si el pipeline lo soporta
+            if (pipeline.metaClass.respondsTo(pipeline, 'loadExternalConfig', script.class)) {
+                pipeline.loadExternalConfig(script)
+            } else if (pipeline.metaClass.respondsTo(pipeline, 'loadExternalConfig')) {
+                pipeline.loadExternalConfig(script)
+            }
+
             if (!script.fileExists(valuesPath) && !script.fileExists(ingressValuesPath)) {
                 script.error("❌ No se encontraron los archivos de configuración: '${valuesPath}' y '${ingressValuesPath}'. No se puede continuar con el despliegue.")
             } else if (!script.fileExists(valuesPath)) {

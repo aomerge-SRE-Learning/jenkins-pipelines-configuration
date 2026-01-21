@@ -9,9 +9,11 @@ class ClusterPipeline implements Serializable {
     private String namespace
     private String kubeconfigPath
     private String contextName = "ci-context"
+    private Map credentials
 
-    ClusterPipeline(String namespace) {
+    ClusterPipeline(String namespace, Map credentials = [:]) {
         this.namespace = namespace
+        this.credentials = credentials
     }
 
     /**
@@ -19,10 +21,14 @@ class ClusterPipeline implements Serializable {
      * Usa withEnv para que el KUBECONFIG tenga el alcance correcto en todo el bloque.
      */
     void connect(script, Closure callback) {
+        def tokenRef = this.credentials?.tokenRef ?: 'k8s_token_ci'
+        def serverRef = this.credentials?.serverRef ?: 'k8s_server_ci'
+        def caRef = this.credentials?.caRef ?: 'k8s_ca_data_ci'
+
         script.withCredentials([
-            script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN'),
-            script.string(credentialsId: 'k8s_server_ci', variable: 'K8S_SERVER'),
-            script.string(credentialsId: 'k8s_ca_data_ci', variable: 'K8S_CA_DATA')
+            script.string(credentialsId: tokenRef, variable: 'K8S_TOKEN'),
+            script.string(credentialsId: serverRef, variable: 'K8S_SERVER'),
+            script.string(credentialsId: caRef, variable: 'K8S_CA_DATA')
         ]) {
             def workDir = script.sh(script: "mktemp -d", returnStdout: true).trim()
             this.kubeconfigPath = "${workDir}/config"
@@ -73,7 +79,8 @@ class ClusterPipeline implements Serializable {
      */
     void sh(script, String command, String tool = "kubectl") {
         if (tool == "kubectl") {
-            script.withCredentials([script.string(credentialsId: 'k8s_token_ci', variable: 'K8S_TOKEN')]) {
+            def tokenRef = this.credentials?.tokenRef ?: 'k8s_token_ci'
+            script.withCredentials([script.string(credentialsId: tokenRef, variable: 'K8S_TOKEN')]) {
                 script.sh "kubectl ${command} --token=\$K8S_TOKEN"
             }
         } else {

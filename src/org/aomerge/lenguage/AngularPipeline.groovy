@@ -132,6 +132,27 @@ class AngularPipeline implements Serializable {
 
     }
     
+    void loadExternalConfig(script) {
+        def settingPath = "config/${this.serviceName}/setting.json"
+        if (script.fileExists(settingPath)) {
+            script.echo "🔍 Cargando metadata externa desde: ${settingPath}"
+            try {
+                def content = script.readFile(settingPath)
+                def json = new JsonSlurper().parseText(content)
+                this.branchConfig.updateFromExternal(json)
+                
+                // Actualizar propiedades locales para sincronía
+                this.environment = this.branchConfig.environment
+                script.echo "✅ Configuración de Cluster actualizada para ambiente: ${this.environment}"
+                script.echo "📍 Namespace: ${this.branchConfig.k8sDetails.namespace}"
+            } catch (Exception e) {
+                script.echo "⚠️ Error al parsear ${settingPath}: ${e.message}"
+            }
+        } else {
+            script.echo "ℹ️ No se encontró setting.json en ${settingPath}. Usando valores por defecto o Jenkinsfile."
+        }
+    }
+
     void deploy(script) {
         script.echo "🚀 Desplegando Angular a ${this.environment}..."
         def chartPath = "./helm"
@@ -145,7 +166,10 @@ class AngularPipeline implements Serializable {
         script.sh "cat ${ingressValuesPath}"        
 
         if (this.deployK8s) {
-            def k8s = new ClusterPipeline("dev-labs")
+            def namespace = this.branchConfig.k8sDetails?.namespace ?: 'dev-labs'
+            def credentials = this.branchConfig.k8sDetails?.credentials ?: [:]
+            def k8s = new ClusterPipeline(namespace, credentials)
+            
             k8s.connect(script) {                            
                 def helmCommand = "upgrade --install ${this.serviceName} ${chartPath} " +
                                   "-f ${valuesPath} " +
@@ -187,8 +211,8 @@ class AngularPipeline implements Serializable {
     }
 
     void config(script, branch){
-        // Inicializar configuración de rama
-        this.branchConfig = new BranchConfig(branch)                
+        // Inicializar configuración de rama passing global config
+        this.branchConfig = new BranchConfig(branch, this.config)                
         
         def packageJson = script.readFile(file: 'package.json')
         def pkgInfo = parsePackageJson(packageJson)

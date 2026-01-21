@@ -6,4 +6,8 @@ jenkinsPipelinesExample([
     approvers: 'admin',    
     typeDeployd: "helm", // helm & kubectl
     configRepoUrl: "" // Repository URL
+    namespace: "" // namespace
+    credentialID: {
+    k8s-token: k8s_token_ci
+    } // credentials of k8s - 
 ])

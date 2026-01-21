@@ -175,7 +175,7 @@ class BranchConfig implements Serializable {
                     this.environment = "pr"
                     this.requireApproval = false
                     this.deployK8s = false
-                    this.dockerPush = false
+                    this.dockerPush = true
                     this.isValidForExecution = true
                 } else {
                     // Ramas no reconocidas - marcar como no válidas para evitar ejecución

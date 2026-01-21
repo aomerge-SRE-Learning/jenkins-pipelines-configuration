@@ -8,6 +8,7 @@ class BranchConfig implements Serializable {
     String environment
     boolean isValidForExecution = true
     Map k8sDetails = [:]
+    Map dockerDetails = [:]
     Map pipelineConfig = [:]
 
     BranchConfig(branch, config = [:]){
@@ -26,10 +27,21 @@ class BranchConfig implements Serializable {
              if (envConfig.credentials) {
                 this.k8sDetails.credentials = envConfig.credentials
              }
+             if (envConfig.docker) {
+                this.dockerDetails = envConfig.docker
+             }
         }
 
-        // 2. Soporte para configuración simplificada en raíz (namespace y credentialID)
+        // 2. Soporte para configuración simplificada en raíz
         
+        // Docker Registry override
+        if (this.pipelineConfig?.dockerRegistry) {
+            this.dockerDetails.registry = this.pipelineConfig.dockerRegistry
+        }
+        if (this.pipelineConfig?.dockerCredentialId) {
+            this.dockerDetails.credentialId = this.pipelineConfig.dockerCredentialId
+        }
+
         // Namespace override: Map (por ambiente) o String (global)
         if (this.pipelineConfig?.namespace) {
             def ns = this.pipelineConfig.namespace
@@ -80,6 +92,9 @@ class BranchConfig implements Serializable {
                 else if (envConfig.credentials instanceof List) {
                     this.k8sDetails.credentials = parseCredsList(envConfig.credentials)
                 }
+            }
+            if (envConfig.docker) {
+                this.dockerDetails = envConfig.docker
             }
         }
     }

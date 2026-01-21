@@ -62,7 +62,12 @@ class AngularPipeline implements Serializable {
         def language = config?.language ?: 'angular'
         def serviceName = this.serviceName ?: 'app'
         def environment = this.environment ?: 'development'
-        def dockerRegistry = config?.dockerRegistry ?: 'docker.io'
+        
+        // Resolver Registro Docker y Credenciales
+        def dockerRegistry = this.branchConfig.dockerDetails?.registry ?: config?.dockerRegistry ?: 'docker.io'
+        def dockerCredId = this.branchConfig.dockerDetails?.credentialId ?: 'DockerHub'
+        def dockerType = this.branchConfig.dockerDetails?.type ?: 'dockerhub'
+        
         def volumeName = "node-modules-${serviceName.toLowerCase()}"
         
         // Crear volumen si no existe
@@ -87,47 +92,52 @@ class AngularPipeline implements Serializable {
                     npm run build --configuration=${environment}
                 '
         """
-        script.sh "podman build -t ${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'} ."
+        
+        def imageTag = "${dockerRegistry}/${serviceName.toLowerCase()}:${this.version ?: 'latest'}"
+        script.sh "podman build -t ${imageTag} ."
                 
         if (this.dockerPush) {
-            script.echo "🐳 Pushing Docker image to registry..."            
-            def version = this.version
-            script.echo "Pushing image: ${dockerRegistry}/${serviceName}:${version}"
+            script.echo "🐳 Pushing Docker image to registry: ${dockerRegistry} using ${dockerType}..."
             
-            script.withCredentials([script.usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                script.withEnv([
-                    "DOCKER_REGISTRY=${dockerRegistry}",
-                    "SERVICE_NAME=${serviceName}",
-                    "VERSION=${version}"
-                ]) {
-                    script.sh('''
-                        echo "$DOCKER_PASS" | podman login --username "$DOCKER_USER" --password-stdin docker.io
+            def registryHost = dockerRegistry.split('/')[0]
+            if (registryHost == 'docker.io' || !registryHost.contains('.')) {
+                registryHost = 'docker.io'
+            }
 
-                        # Determinar el path de la imagen
-                        if [ "$DOCKER_REGISTRY" != "docker.io" ] && [ "$DOCKER_REGISTRY" != "localhost" ]; then
-                            IMAGE_PATH="$DOCKER_REGISTRY/$SERVICE_NAME:$VERSION"
-                        else
-                            IMAGE_PATH="docker.io/$DOCKER_USER/$SERVICE_NAME:$VERSION"
-                        fi
+            def checkAndPush = { loginCmd, logoutCmd ->
+                script.sh """
+                    ${loginCmd}
+                    
+                    echo "🔍 Validando si la versión ${this.version} ya existe en el registro..."
+                    if skopeo inspect "docker://${imageTag}" > /dev/null 2>&1; then
+                        echo "❌ ERROR: La imagen ${imageTag} ya existe en el registry."
+                        echo "Por favor, actualiza la versión en package.json antes de intentar un nuevo push."
+                        ${logoutCmd}
+                        exit 1
+                    fi
+                    
+                    echo "✅ La versión es nueva. Procediendo con el push..."
+                    podman push ${imageTag}
+                    ${logoutCmd}
+                """
+            }
 
-                        # Validar si la imagen ya existe en el registry (sin descargar)
-                        if skopeo inspect "docker://$IMAGE_PATH" > /dev/null 2>&1; then
-                            echo "❌ ERROR: La imagen $IMAGE_PATH ya existe en el registry."
-                            echo "Por favor, actualiza la versión en package.json antes de hacer push."
-                            podman logout docker.io 2>/dev/null || true
-                            exit 1
-                        fi
-
-                        echo "✅ La versión $VERSION está disponible. Procediendo con el push..."
-
-                        # Push de la imagen
-                        podman push "$IMAGE_PATH"
-                        
-                        podman logout docker.io 2>/dev/null || true
-                    ''')
-                    script.echo "Imagen Docker subida correctamente: ${dockerRegistry}/${serviceName}:${version}"
+            if (dockerType == 'artifact-registry') {
+                // Login para Google Artifact Registry usando Service Account (Secret File)
+                script.withCredentials([script.file(credentialsId: dockerCredId, variable: 'GCP_SA_KEY')]) {
+                    def login = "cat \"\$GCP_SA_KEY\" | podman login -u _json_key --password-stdin ${registryHost}"
+                    def logout = "podman logout ${registryHost}"
+                    checkAndPush(login, logout)
+                }
+            } else {
+                // Login estándar (DockerHub, Nexus, etc)
+                script.withCredentials([script.usernamePassword(credentialsId: dockerCredId, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    def login = "echo \"\$DOCKER_PASS\" | podman login --username \"\$DOCKER_USER\" --password-stdin ${registryHost}"
+                    def logout = "podman logout ${registryHost}"
+                    checkAndPush(login, logout)
                 }
             }
+            script.echo "Imagen Docker subida correctamente: ${imageTag}"
         }
 
     }
@@ -158,7 +168,11 @@ class AngularPipeline implements Serializable {
         def chartPath = "./helm"
         def valuesPath = "config/${this.serviceName}/deploy-helm.yaml"
         def ingressValuesPath = "config/${this.serviceName}/ingress-helm.yaml"
-        def imageFull = "${config.dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}" 
+        
+        // Resolver Registro Docker para el despliegue
+        def dockerRegistry = this.branchConfig.dockerDetails?.registry ?: config?.dockerRegistry ?: 'docker.io'
+        def imageFull = "${dockerRegistry}/${this.serviceName.toLowerCase()}:${this.version}" 
+        
         script.echo "Contenido de ${valuesPath}:"
         script.sh "cat ${valuesPath}"
 

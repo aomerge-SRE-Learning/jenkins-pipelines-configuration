@@ -144,22 +144,36 @@ class AngularPipeline implements Serializable {
     
     void loadExternalConfig(script) {
         def settingPath = "config/${this.serviceName}/setting.json"
+        
         if (script.fileExists(settingPath)) {
             script.echo "🔍 Cargando metadata externa desde: ${settingPath}"
             try {
-                def content = script.readFile(settingPath)
+                def content = script.readFile(settingPath)?.trim()
+                if (!content) {
+                    script.echo "⚠️ El archivo ${settingPath} está VACÍO."
+                    return
+                }
+                
                 def json = new JsonSlurper().parseText(content)
                 this.branchConfig.updateFromExternal(json)
                 
                 // Actualizar propiedades locales para sincronía
                 this.environment = this.branchConfig.environment
-                script.echo "✅ Configuración de Cluster actualizada para ambiente: ${this.environment}"
-                script.echo "📍 Namespace: ${this.branchConfig.k8sDetails.namespace}"
+                this.dockerPush = this.branchConfig.dockerPush
+                this.deployK8s = this.branchConfig.deployK8s
+                this.requireApproval = this.branchConfig.requireApproval
+                
+                script.echo "✅ Configuración actualizada: Env=${this.environment}, Push=${this.dockerPush}, Deploy=${this.deployK8s}"
+                if (this.branchConfig.k8sDetails?.namespace) {
+                    script.echo "📍 Namespace detectado: ${this.branchConfig.k8sDetails.namespace}"
+                }
+                script.sh """echo Configuración cargada && echo '' && cat ${settingPath} && echo '' """
             } catch (Exception e) {
-                script.echo "⚠️ Error al parsear ${settingPath}: ${e.message}"
+                script.echo "❌ Error al procesar metadata externa (${settingPath}): ${e.message}"
             }
         } else {
-            script.echo "ℹ️ No se encontró setting.json en ${settingPath}. Usando valores por defecto o Jenkinsfile."
+            script.echo "ℹ️ No se detectó setting.json en la ruta: ${settingPath}"
+            script.sh "ls -R config || echo 'No existe carpeta config'"
         }
     }
 

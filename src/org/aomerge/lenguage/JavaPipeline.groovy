@@ -80,13 +80,26 @@ class JavaPipeline implements Serializable {
         if (script.fileExists(settingPath)) {
             script.echo "🔍 Cargando metadata externa para Java desde: ${settingPath}"
             try {
-                def content = script.readFile(settingPath)
+                def content = script.readFile(settingPath)?.trim()
+                if (!content) {
+                    script.echo "⚠️ El archivo ${settingPath} está VACÍO."
+                    return
+                }
                 def json = new JsonSlurper().parseText(content)
                 this.branchConfig.updateFromExternal(json)
+                
+                // Sincronizar propiedades
                 this.environment = this.branchConfig.environment
+                this.dockerPush = this.branchConfig.dockerPush
+                this.deployK8s = this.branchConfig.deployK8s
+                this.requireApproval = this.branchConfig.requireApproval
+
+                script.echo "✅ Configuración externa cargada (Ambiente: ${this.environment})"
             } catch (Exception e) {
-                script.echo "⚠️ Error al parsear ${settingPath}: ${e.message}"
+                script.echo "❌ Error al parsear metadata externa (${settingPath}): ${e.message}"
             }
+        } else {
+            script.echo "ℹ️ No se detectó setting.json para el servicio ${this.serviceName}"
         }
     }
 
@@ -143,6 +156,24 @@ class JavaPipeline implements Serializable {
         script.echo "🏷️ Versión: ${this.version}"        
         script.echo "🌍 Environment: ${this.environment}"
         script.echo "🌿 Rama: ${branch}"
+    }
+
+    @NonCPS
+    private Map parseProjectInfo(script) {
+        // Intentar leer de archivos comunes de Java
+        if (script.fileExists('pom.xml')) {
+            def pom = script.readFile('pom.xml')
+            // Parseo básico de POM (mejorable con XmlSlurper si no hay CPS issues)
+            def name = pom.find(/<artifactId>(.*?)<\/artifactId>/) { it[1] } ?: 'java-app'
+            def version = pom.find(/<version>(.*?)<\/version>/) { it[1] } ?: '1.0.0'
+            return [name: name, version: version]
+        } else if (script.fileExists('build.gradle')) {
+            def gradle = script.readFile('build.gradle')
+            def name = gradle.find(/rootProject.name\s*=\s*['"](.*?)['"]/) { it[1] } ?: 'java-app'
+            def version = gradle.find(/version\s*=\s*['"](.*?)['"]/) { it[1] } ?: '1.0.0'
+            return [name: name, version: version]
+        }
+        return [name: 'java-app', version: '1.0.0']
     }
 
     // Método auxiliar para verificar si el pipeline deba continuar

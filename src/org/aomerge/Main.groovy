@@ -58,6 +58,28 @@ class Main implements Serializable {
         }
     }
 
+    private void prepareExternalConfig(pipeline, script) {
+        if (config.configRepoUrl) {
+            script.echo "📦 Descargando repositorio de configuración: ${config.configRepoUrl}"
+            script.checkout([
+                $class: 'GitSCM',
+                branches: [[name: this.branch ?: 'dev']],
+                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'config']],
+                userRemoteConfigs: [[
+                    url: config.configRepoUrl, 
+                    credentialsId: "aomerge"
+                ]]
+            ])
+            
+            // Resolver metadata de infraestructura (Docker Registry, Namespaces, etc.)
+            if (pipeline.metaClass.respondsTo(pipeline, 'loadExternalConfig', script.class)) {
+                pipeline.loadExternalConfig(script)
+            } else if (pipeline.metaClass.respondsTo(pipeline, 'loadExternalConfig')) {
+                pipeline.loadExternalConfig(script)
+            }
+        }
+    }
+
     private void CIPipeline(pipeline, script){
 
         // Ejecutar stages comunes
@@ -80,57 +102,31 @@ class Main implements Serializable {
         script.stage('Copy values helm') {
             def valuesPath = "config/${serviceName}/deploy-helm.yaml"
             def ingressValuesPath = "config/${serviceName}/ingress-helm.yaml"
-            if (config.configRepoUrl) {                
-                script.echo "Source: External Repository ${config.configRepoUrl}"
-                script.checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: this.branch ?: 'dev']],
-                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'config']],
-                    userRemoteConfigs: [[
-                        url: config.configRepoUrl, 
-                        credentialsId: "aomerge"
-                    ]]
-                ])
-            } else {
+            
+            if (!config.configRepoUrl) {
+                script.echo "ℹ️ Usando configuración embebida (sin repositorio externo)"
                 // Opción B: Usar la lógica actual de la librería (libraryResource)
                 def helmPipeline = new HelmPipeline()
                 helmPipeline.copyHelm(script)
-            }
-            
-            script.sh """
-                echo "📂 Contenido de la carpeta helm:"
-                ls -R config                
-            """       
-
-            // Intentar cargar configuración externa (setting.json) si el pipeline lo soporta
-            if (pipeline.metaClass.respondsTo(pipeline, 'loadExternalConfig', script.class)) {
-                pipeline.loadExternalConfig(script)
-            } else if (pipeline.metaClass.respondsTo(pipeline, 'loadExternalConfig')) {
-                pipeline.loadExternalConfig(script)
+            } else {
+                script.sh """
+                    echo "📂 Contenido de la carpeta de configuración externa:"
+                    ls -R config                
+                """       
             }
 
-            if (!script.fileExists(valuesPath) && !script.fileExists(ingressValuesPath)) {
-                script.error("❌ No se encontraron los archivos de configuración: '${valuesPath}' y '${ingressValuesPath}'. No se puede continuar con el despliegue.")
-            } else if (!script.fileExists(valuesPath)) {
-                script.error("❌ No se encontró el archivo de configuración de valores: '${valuesPath}'. No se puede continuar con el despliegue.")
-            } else if (!script.fileExists(ingressValuesPath)) {
-                script.error("❌ No se encontró el archivo de configuración de ingress: '${ingressValuesPath}'. No se puede continuar con el despliegue.")
-            }             
+            if (!script.fileExists(valuesPath) || !script.fileExists(ingressValuesPath)) {
+                script.error("❌ No se encontraron los archivos de configuración requeridos en 'config/${serviceName}/'.")
+            }            
         }
         
         script.stage('Copy helm') {            
             def helmPipeline = new HelmPipeline()
             helmPipeline.copyHelm(script)
-            script.sh """
-                cd helm  
-                ls
-                cd templates
-                ls
-                cd ../..
-            """
         }
 
         script.echo "pipeline.requireApproval: ${pipeline.requireApproval}"
+
         if (pipeline.requireApproval) {
             script.stage('Approval') {
                 script.timeout(time: 30, unit: 'DAYS') {
@@ -172,6 +168,7 @@ class Main implements Serializable {
             if (pipeline.metaClass.respondsTo(pipeline, 'config')) {
                 pipeline.config(script, this.branch)                                
             }            
+            this.prepareExternalConfig(pipeline, script)
         }    
                 
         if (pipeline.metaClass.respondsTo(pipeline, 'isValidExecution') && 

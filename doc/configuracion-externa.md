@@ -10,46 +10,52 @@ Existe un repositorio central (`config-pipelines-jenkins`) que almacena los valo
 config-pipelines-jenkins/
 ├── config/
 │   ├── angular-proyect/       # Nombre del servicio (package.json)
-│   │   └── deploy-helm.yaml   # Valores específicos para Helm
+│   │   ├── deploy-helm.yaml   # Valores específicos para Helm
+│   │   └── setting.json       # NUEVO: Metadata de infraestructura (K8s, Docker)
 │   ├── otro-servicio/
 │   │   └── deploy-helm.yaml
 │   └── ...
 └── ...
 ```
 
-## Archivo `deploy-helm.yaml`
-Este archivo define **CÓMO** se ejecuta la aplicación, pero no **QUÉ** aplicación es. Los valores específicos (nombres, imágenes, rutas) son inyectados por el pipeline.
+## Archivo `setting.json` (Metadata de Infraestructura)
+Este archivo es el cerebro del despliegue. Define a qué cluster, namespace y registro Docker se dirige la aplicación según el ambiente.
 
-### Ejemplo Limpio
-```yaml
-deployment:
-  replicas: 2
-  
-container:
-  port: 80
-  # No definir 'image' ni 'name' aquí, el pipeline lo hace.
-
-probe:
-  liveness:
-    initialDelaySeconds: 30
-    periodSeconds: 10
-  readiness:
-    initialDelaySeconds: 10
-    periodSeconds: 5
-
-resources:
-  requests:
-    memory: "128Mi"
-    cpu: "100m"
-  limits:
-    memory: "256Mi"
-    cpu: "200m"
-
-service:
-  type: ClusterIP
-  port: 80
-  targetPort: 80
+### Ejemplo de Configuración Multicloud/Multi-Registry
+```json
+{
+  "project": "mi-app",
+  "environments": {
+    "development": {
+      "namespace": "dev-ns",
+      "credentials": {
+        "tokenRef": "k8s_token_ci",
+        "serverRef": "k8s_server_ci",
+        "caRef": "k8s_ca_data_ci"
+      },
+      "docker": {
+        "registry": "docker.io/aomerge-dev",
+        "credentialId": "DockerHub"
+      }
+    },
+    "production": {
+      "namespace": "prod-ns",
+      "docker": {
+        "registry": "us-central1-docker.pkg.dev/project/repo",
+        "credentialId": "gcp-sa-artifact-registry",
+        "type": "artifact-registry"
+      }
+    }
+  }
+}
 ```
+
+## Prioridad de Configuración (Precedencia)
+El pipeline resuelve los valores siguiendo este orden de importancia (de menor a mayor):
+
+1.  **Defaults de Librería:** Valores hardcodeados en `BranchConfig.groovy`.
+2.  **Jenkinsfile Overrides:** Valores pasados en el mapa `jenkinsPipelinesExample([...])`.
+3.  **External `setting.json`:** Si existe en el repo de configuración, sobrescribe todo lo anterior.
 
 ## Inyección Dinámica de Valores
 Durante la etapa de `deploy`, la clase `AngularPipeline.groovy` ejecuta Helm inyectando los siguientes valores automáticamente:

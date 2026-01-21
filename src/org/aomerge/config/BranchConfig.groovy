@@ -112,14 +112,7 @@ class BranchConfig implements Serializable {
                 this.deployK8s = true
                 this.dockerPush = true
                 this.isValidForExecution = true
-                this.k8sDetails = [
-                    namespace: 'prod-labs',
-                    credentials: [
-                        tokenRef: 'k8s_token_prod',
-                        serverRef: 'k8s_server_prod',
-                        caRef: 'k8s_ca_data_prod'
-                    ]
-                ]
+                this.k8sDetails = [:] // Limpio, esperando override
                 break
             case "qa":
                 this.environment = "qa"
@@ -127,14 +120,7 @@ class BranchConfig implements Serializable {
                 this.deployK8s = true
                 this.dockerPush = true
                 this.isValidForExecution = true
-                this.k8sDetails = [
-                    namespace: 'qa-labs',
-                    credentials: [
-                        tokenRef: 'k8s_token_qa',
-                        serverRef: 'k8s_server_qa',
-                        caRef: 'k8s_ca_data_qa'
-                    ]
-                ]
+                this.k8sDetails = [:] // Limpio, esperando override
                 break
             case "dev":
             case "develop":
@@ -143,14 +129,7 @@ class BranchConfig implements Serializable {
                 this.deployK8s = true
                 this.dockerPush = true  // En dev no push a registry
                 this.isValidForExecution = true
-                this.k8sDetails = [
-                    namespace: 'dev-labs',
-                    credentials: [
-                        tokenRef: 'k8s_token_ci',
-                        serverRef: 'k8s_server_ci',
-                        caRef: 'k8s_ca_data_ci'
-                    ]
-                ]
+                this.k8sDetails = [:] // Limpio, esperando override
                 break
             default:
                 if (currentBranch ==~ /^feature-.*$/) {
@@ -159,42 +138,21 @@ class BranchConfig implements Serializable {
                     this.deployK8s = false
                     this.dockerPush = false
                     this.isValidForExecution = true
-                    this.k8sDetails = [
-                        namespace: 'dev-labs',
-                        credentials: [
-                            tokenRef: 'k8s_token_ci',
-                            serverRef: 'k8s_server_ci',
-                            caRef: 'k8s_ca_data_ci'
-                        ]
-                    ]
+                    this.k8sDetails = [:] // Limpio, esperando override
                 } else if (currentBranch ==~ /^bugfix-.*$/) {
                     this.environment = "bugfix"
                     this.requireApproval = false
                     this.deployK8s = false
                     this.dockerPush = false
                     this.isValidForExecution = true
-                    this.k8sDetails = [
-                        namespace: 'dev-labs',
-                        credentials: [
-                            tokenRef: 'k8s_token_ci',
-                            serverRef: 'k8s_server_ci',
-                            caRef: 'k8s_ca_data_ci'
-                        ]
-                    ]
+                    this.k8sDetails = [:] // Limpio, esperando override
                 } else if (currentBranch ==~ /^hotfix-.*$/) {
                     this.environment = "hotfix"
                     this.requireApproval = true
                     this.deployK8s = true
                     this.dockerPush = true
                     this.isValidForExecution = true
-                    this.k8sDetails = [
-                        namespace: 'hotfix-labs',
-                        credentials: [
-                            tokenRef: 'k8s_token_ci',
-                            serverRef: 'k8s_server_ci',
-                            caRef: 'k8s_ca_data_ci'
-                        ]
-                    ]
+                    this.k8sDetails = [:] // Limpio, esperando override
                 } else if (currentBranch?.startsWith('pr')) {
                     // Para Pull Requests - solo CI, no CD
                     this.environment = "pr"

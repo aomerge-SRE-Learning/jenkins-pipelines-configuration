@@ -15,9 +15,14 @@ flowchart TD
     
     SelectLang -- Angular --> AngConfig[Stage: Config]
     SelectLang -- Java --> JavaConfig[Stage: Config]
+
+    subgraph Config_Evolution [Evolución de Configuración]
+        AngConfig --> LoadExt[Stage: Copy values helm]
+        LoadExt --> Resolve[loadExternalConfig: Resolve settings.json]
+    end
     
     subgraph Angular_Pipeline [Lógica AngularPipeline.groovy]
-        AngConfig -->|Lee package.json| SetEnv[Definir Entorno & Versión]
+        Resolve -->|Lee package.json| SetEnv[Definir Entorno & Versión]
         SetEnv --> BuildBase[Construir Imagen Base]
         
         BuildBase --> HelmSetup[Stage: Copy Helm & Values]

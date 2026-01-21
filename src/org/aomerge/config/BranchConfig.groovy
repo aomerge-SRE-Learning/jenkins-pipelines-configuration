@@ -78,18 +78,34 @@ class BranchConfig implements Serializable {
 
     @NonCPS
     public void updateFromExternal(Map externalConfig) {
-        if (externalConfig?.environments && externalConfig.environments[this.environment]) {
+        if (!externalConfig) return
+
+        // Prioridad 1: Estructura plana (Branch-specific)
+        // Si el JSON viene directo para la rama actual
+        if (externalConfig.namespace) {
+            this.k8sDetails.namespace = externalConfig.namespace
+        }
+        if (externalConfig.credentials) {
+            if (externalConfig.credentials instanceof Map) {
+                this.k8sDetails.credentials = externalConfig.credentials
+            } else if (externalConfig.credentials instanceof List) {
+                this.k8sDetails.credentials = parseCredsList(externalConfig.credentials)
+            }
+        }
+        if (externalConfig.docker) {
+            this.dockerDetails = externalConfig.docker
+        }
+
+        // Prioridad 2: Retrocompatibilidad con bloque 'environments'
+        if (externalConfig.environments && externalConfig.environments[this.environment]) {
             def envConfig = externalConfig.environments[this.environment]
             if (envConfig.namespace) {
                 this.k8sDetails.namespace = envConfig.namespace
             }
             if (envConfig.credentials) {
-                // Si viene como Map directo
                 if (envConfig.credentials instanceof Map) {
                     this.k8sDetails.credentials = envConfig.credentials
-                } 
-                // Si viene como lista (soporte para el formato simplificado en JSON)
-                else if (envConfig.credentials instanceof List) {
+                } else if (envConfig.credentials instanceof List) {
                     this.k8sDetails.credentials = parseCredsList(envConfig.credentials)
                 }
             }

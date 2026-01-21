@@ -7,55 +7,40 @@ Existe un repositorio central (`config-pipelines-jenkins`) que almacena los valo
 
 ### Estructura de Directorios
 ```text
-config-pipelines-jenkins/
+config-pipelines-jenkins/ (Branch: main, qa, dev)
 ├── config/
-│   ├── angular-proyect/       # Nombre del servicio (package.json)
-│   │   ├── deploy-helm.yaml   # Valores específicos para Helm
-│   │   └── setting.json       # NUEVO: Metadata de infraestructura (K8s, Docker)
-│   ├── otro-servicio/
-│   │   └── deploy-helm.yaml
-│   └── ...
+│   ├── angular-proyect/       
+│   │   ├── deploy-helm.yaml   
+│   │   └── setting.json       # Configuración específica de la RAMA
 └── ...
 ```
 
-## Archivo `setting.json` (Metadata de Infraestructura)
-Este archivo es el cerebro del despliegue. Define a qué cluster, namespace y registro Docker se dirige la aplicación según el ambiente.
+## Archivo `setting.json` (Estrategia por Rama)
+Para mejorar la limpieza y el aislamiento, el `setting.json` ya no contiene todos los ambientes en un solo archivo. Ahora, el pipeline descarga la **rama correspondiente** del repositorio de configuración (ej: si la app corre en `qa`, descarga la rama `qa` de configuración).
 
-### Ejemplo de Configuración Multicloud/Multi-Registry
+### Ejemplo de setting.json (Estructura Plana y Limpia)
+Al estar en la rama correcta, el archivo se simplifica drásticamente:
+
 ```json
 {
   "project": "mi-app",
-  "environments": {
-    "development": {
-      "namespace": "dev-ns",
-      "credentials": {
-        "tokenRef": "k8s_token_ci",
-        "serverRef": "k8s_server_ci",
-        "caRef": "k8s_ca_data_ci"
-      },
-      "docker": {
-        "registry": "docker.io/aomerge-dev",
-        "credentialId": "DockerHub"
-      }
-    },
-    "production": {
-      "namespace": "prod-ns",
-      "docker": {
-        "registry": "us-central1-docker.pkg.dev/project/repo",
-        "credentialId": "gcp-sa-artifact-registry",
-        "type": "artifact-registry"
-      }
-    }
+  "namespace": "qa-ns",
+  "credentials": {
+    "tokenRef": "k8s_token_qa",
+    "serverRef": "k8s_server_qa",
+    "caRef": "k8s_ca_data_qa"
+  },
+  "docker": {
+    "registry": "docker.io/aomerge-qa",
+    "credentialId": "DockerHub"
   }
 }
 ```
 
-## Prioridad de Configuración (Precedencia)
-El pipeline resuelve los valores siguiendo este orden de importancia (de menor a mayor):
-
-1.  **Defaults de Librería:** Valores hardcodeados en `BranchConfig.groovy`.
-2.  **Jenkinsfile Overrides:** Valores pasados en el mapa `jenkinsPipelinesExample([...])`.
-3.  **External `setting.json`:** Si existe en el repo de configuración, sobrescribe todo lo anterior.
+## Ventajas de este Nuevo Enfoque
+1.  **Aislamiento Total**: Un cambio en la configuración de `dev` no puede afectar accidentalmente a `production` ya que viven en ramas distintas de Git.
+2.  **Simplicidad**: El pipeline carga los valores directamente sin necesidad de filtrar por el nombre del ambiente.
+3.  **Flexibilidad de Ingress**: Permite variar hosts y paths de ingress de forma independiente por cada rama de configuración.
 
 ## Inyección Dinámica de Valores
 Durante la etapa de `deploy`, la clase `AngularPipeline.groovy` ejecuta Helm inyectando los siguientes valores automáticamente:

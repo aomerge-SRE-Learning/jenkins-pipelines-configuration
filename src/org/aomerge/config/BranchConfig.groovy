@@ -17,6 +17,7 @@ class BranchConfig implements Serializable {
         this.applyOverrides()
     }
 
+    @NonCPS
     private void applyOverrides() {
         // 1. Soporte para configuración estructurada por ambientes (environments)
         if (this.pipelineConfig?.environments && this.pipelineConfig.environments[this.environment]) {

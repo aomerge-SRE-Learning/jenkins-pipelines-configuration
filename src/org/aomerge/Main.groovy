@@ -52,6 +52,9 @@ class Main implements Serializable {
         }else if (script.env.CHANGE_ID) {
             script.echo "🔀 PR detectado - Solo CI"
             this.CIPipeline(pipeline, script)
+            script.stage("Remove files"){
+                pipeline.trash(script)
+            }
         } else if (branchName) {
             script.echo "🚀 Push detectado - Ejecutando CD completo"
             this.CDPipeline(pipeline, script)            
@@ -89,10 +92,6 @@ class Main implements Serializable {
         
         script.stage('Build') {
             pipeline.build(script)
-        }
-
-        script.stage("Remove files"){
-            pipeline.trash(script)
         }
     }
 
